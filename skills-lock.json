@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/engineering/spec/SKILL.md",
       "computedHash": "65b3e5a3383949a4cca0756b3b37ac4b9980bb0fec0b5885fd576da308982a2e"
+    },
+    "spec-impl": {
+      "source": "klerith/fernando-skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/spec-impl/SKILL.md",
+      "computedHash": "4a998e9a34ad743a801f7bb7708fc12023c4b00ddfaa5131700720202daa7988"
     }
   }
 }

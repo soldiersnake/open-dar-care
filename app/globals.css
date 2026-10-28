@@ -1,26 +1,60 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-bg: #f6ecdf;
+  --color-panel: #fffdf9;
+  --color-line: #ece0d0;
+  --color-line-soft: #f0e6d8;
+  --color-line-strong: #e7dac8;
+
+  --color-ink: #3f362e;
+  --color-ink-soft: #4a4038;
+  --color-ink-body: #6e6359;
+  --color-label: #8a7c6d;
+  --color-muted: #a89a8b;
+  --color-muted-soft: #94887b;
+
+  --color-accent: #d9583c;
+  --color-accent-bright: #e0654a;
+  --color-accent-edit: #c5503a;
+
+  --color-avatar-kids: #a9d9e8;
+  --color-avatar-kids-ink: #1f7a93;
+  --color-brand-warm: #f2937a;
+  --color-logo-warm: #f8c3a8;
+
+  --color-cta-bg: #fbe3d8;
+  --color-cta-ink: #e0654a;
+
+  --color-photo-line: #dbcdba;
+  --color-photo-bg: #f4ece1;
+  --color-photo-ink: #b0a290;
+
+  --color-scroll: #e4d6c4;
+
+  --color-badge-achievement: #cfebd8;
+  --color-badge-achievement-ink: #3e9b6c;
+  --color-badge-activity: #c7e7f1;
+  --color-badge-activity-ink: #2e89a6;
+  --color-badge-announcement: #ccd8f4;
+  --color-badge-announcement-ink: #4e72c8;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f6ecdf;
+  color: #3f362e;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e4d6c4;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
