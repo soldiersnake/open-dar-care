@@ -33,6 +33,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - /spec Usaremos esta habilidad para crear las especificaciones.
 - /spec-impl Usaremos esta skill para hacer las implementaciones.
 
+## Spec Driven Development - Agente verificador
+
+- `spec-verifier` (`.opencode/agents/spec-verifier.md`): agente que verifica los criterios de aceptación de una spec de `specs/*.md`. Ejecuta build/tsc/lint, consulta Context7 para Next.js, valida pantallas con Playwright + visión contra los mockups, arregla el código si algo falla y al final marca los checks en la spec solo con evidencia real.
+- Comando de verificación de spec: invocar el agente con la spec a verificar (ej: `@spec-verifier verifica la spec /specs/01-feed-home.md` / `@spec-verifier specs/01-feed-home.md`). Si no se indica spec, el agente preguntará cuál.
+
 ## Reglas de codigo
 
 - Usar codigo limpio, nombres, funciones y variables, etc, en ingles.
