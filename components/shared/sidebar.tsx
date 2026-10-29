@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type JSX } from "react";
+import { usePathname } from "next/navigation";
 import { navItems, mockUser, type NavItem } from "@/lib/feed-data";
 
 const navIconGlyphs: Record<NavItem["icon"], JSX.Element> = {
@@ -82,35 +83,44 @@ function NewPostButton({ onClick }: { onClick?: () => void }) {
   );
 }
 
+function isNavItemActive(pathname: string, href: string) {
+  if (href === "#") return false;
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
   return (
     <nav className="flex flex-1 flex-col gap-1">
-      {navItems.map((item) => (
-        <a
-          key={item.icon}
-          href="#"
-          onClick={onNavigate}
-          className={
-            item.active
-              ? "flex items-center gap-3 rounded-xl bg-cta-bg px-3 py-2.5 text-[14.5px] font-extrabold text-accent"
-              : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-semibold text-ink-body"
-          }
-        >
-          <svg
-            width="19"
-            height="19"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {navItems.map((item) => {
+        const active = isNavItemActive(pathname, item.href);
+        return (
+          <a
+            key={item.icon}
+            href={item.href}
+            onClick={onNavigate}
+            className={
+              active
+                ? "flex items-center gap-3 rounded-xl bg-cta-bg px-3 py-2.5 text-[14.5px] font-extrabold text-accent"
+                : "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-semibold text-ink-body"
+            }
           >
-            {navIconGlyphs[item.icon]}
-          </svg>
-          {item.label}
-        </a>
-      ))}
+            <svg
+              width="19"
+              height="19"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {navIconGlyphs[item.icon]}
+            </svg>
+            {item.label}
+          </a>
+        );
+      })}
     </nav>
   );
 }

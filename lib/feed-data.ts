@@ -19,14 +19,14 @@ export type NavIcon = "feed" | "kids" | "notices" | "account";
 export type NavItem = {
   label: string;
   icon: NavIcon;
-  active?: boolean;
+  href: string;
 };
 
 export const navItems: NavItem[] = [
-  { label: "Feed", icon: "feed", active: true },
-  { label: "Niños", icon: "kids" },
-  { label: "Avisos", icon: "notices" },
-  { label: "Mi cuenta", icon: "account" },
+  { label: "Feed", icon: "feed", href: "/" },
+  { label: "Niños", icon: "kids", href: "/kids" },
+  { label: "Avisos", icon: "notices", href: "#" },
+  { label: "Mi cuenta", icon: "account", href: "#" },
 ];
 
 export const mockUser = {
