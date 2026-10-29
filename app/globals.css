@@ -23,6 +23,15 @@
 
   --color-avatar-kids: #a9d9e8;
   --color-avatar-kids-ink: #1f7a93;
+  --color-avatar-pink: #f4b8cc;
+  --color-avatar-pink-ink: #c44a7a;
+  --color-avatar-green: #b9dec4;
+  --color-avatar-green-ink: #3e8b62;
+  --color-avatar-yellow: #f4dc8e;
+  --color-avatar-yellow-ink: #9a7b1e;
+  --color-avatar-purple: #c9b6e8;
+  --color-avatar-purple-ink: #7b5fc0;
+  --color-avatar-parent: #a9c7e8;
   --color-brand-warm: #f2937a;
   --color-logo-warm: #f8c3a8;
 
@@ -41,11 +50,26 @@
   --color-badge-activity-ink: #2e89a6;
   --color-badge-announcement: #ccd8f4;
   --color-badge-announcement-ink: #4e72c8;
+  --color-badge-allergy: #fbd8cc;
+  --color-badge-allergy-ink: #d9684a;
+  --color-badge-link: #f9d2de;
+  --color-badge-link-ink: #c56486;
+  --color-badge-pending: #f7e7a6;
+  --color-badge-pending-ink: #9a7b1e;
+
+  --color-allergy-bg: #fbdad6;
+  --color-allergy-icon: #f4a8a0;
+  --color-allergy-title: #c5413a;
+  --color-allergy-text: #b25249;
 }
 
 body {
   background: #f6ecdf;
   color: #3f362e;
+}
+
+::placeholder {
+  color: #b6a99b;
 }
 
 ::-webkit-scrollbar {
