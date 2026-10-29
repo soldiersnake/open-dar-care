@@ -34,7 +34,7 @@ function Logo({ className }: { className?: string }) {
         className ?? "flex items-center gap-3 px-2 pt-1 pb-5"
       }
     >
-      <div className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-xl bg-[linear-gradient(155deg,#F8C3A8,#F2937A)]">
+      <div className="flex h-9.5 w-9.5 flex-none items-center justify-center rounded-xl bg-[linear-gradient(155deg,#F8C3A8,#F2937A)]">
         <svg
           width="21"
           height="21"
@@ -129,7 +129,7 @@ function UserBlock() {
   return (
     <div className="mt-2.5 border-t border-line pt-3.5">
       <div className="flex items-center gap-3 px-2 py-1.5">
-        <div className="flex h-[38px] w-[38px] flex-none items-center justify-center rounded-full bg-brand-warm font-display text-base font-semibold text-white">
+        <div className="flex h-9.5 w-9.5 flex-none items-center justify-center rounded-full bg-brand-warm font-display text-base font-semibold text-white">
           {mockUser.initials}
         </div>
         <div className="min-w-0 flex-1">
@@ -179,7 +179,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-[248px] flex-none flex-col border-r border-line bg-panel px-4 py-6 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-62 flex-none flex-col border-r border-line bg-panel px-4 py-6 md:flex">
         <SidebarContent />
       </aside>
 
@@ -213,7 +213,7 @@ export function Sidebar() {
         />
       )}
       <div
-        className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-line bg-panel px-4 py-6 transition-transform duration-200 md:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-70 flex-col border-r border-line bg-panel px-4 py-6 transition-transform duration-200 md:hidden ${
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

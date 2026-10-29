@@ -8,7 +8,7 @@ export default function Home() {
       <Sidebar />
 
       <main className="min-w-0 flex-1 md:h-screen md:overflow-y-auto">
-        <div className="mx-auto w-full max-w-[760px] px-5 pb-20 pt-[98px] md:px-10 md:pt-[34px]">
+        <div className="mx-auto w-full max-w-190 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
           <div className="mb-6">
             <div className="mb-1 text-[12.5px] font-extrabold tracking-[0.8px] text-accent">
               {homeHeader.eyebrow}
@@ -16,14 +16,14 @@ export default function Home() {
             <h1 className="m-0 font-display text-[30px] font-semibold text-ink">
               {homeHeader.greeting}
             </h1>
-            <p className="m-0 mt-[5px] text-[14.5px] text-muted-soft">
+            <p className="m-0 mt-1.25 text-[14.5px] text-muted-soft">
               {homeHeader.summary}
             </p>
           </div>
 
           <a
             href="#"
-            className="mb-6 flex items-center gap-3.5 rounded-[18px] border border-line bg-panel px-[18px] py-3.5 shadow-[0_4px_14px_-10px_rgba(120,90,60,0.4)]"
+            className="mb-6 flex items-center gap-3.5 rounded-[18px] border border-line bg-panel px-4.5 py-3.5 shadow-[0_4px_14px_-10px_rgba(120,90,60,0.4)]"
           >
             <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-brand-warm font-display text-base font-semibold text-white">
               {mockUser.initials}
@@ -31,7 +31,7 @@ export default function Home() {
             <span className="flex-1 text-[15px] text-muted">
               Compartí un momento…
             </span>
-            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-xl bg-cta-bg text-cta-ink">
+            <span className="flex h-9.5 w-9.5 items-center justify-center rounded-xl bg-cta-bg text-cta-ink">
               <svg
                 width="19"
                 height="19"

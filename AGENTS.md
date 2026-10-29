@@ -32,6 +32,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - /spec Usaremos esta habilidad para crear las especificaciones.
 - /spec-impl Usaremos esta skill para hacer las implementaciones.
+- Ubicación: `.agents/skills/spec/SKILL.md` y `.agents/skills/spec-impl/SKILL.md` (IDs exactos: `spec`, `spec-impl`).
+- **Cómo se invocan:** escribiendo `/spec …` o `/spec-impl …` (se resuelven vía los wrappers en `.opencode/commands/`), o `@spec` / `@spec-impl` en el prompt.
+- **Regla obligatoria para el agente:** ante cualquier mención de `/spec` o `/spec-impl`, cargar SIEMPRE el skill correspondiente con la herramienta `skill` (IDs exactos: `spec`, `spec-impl`) y seguir sus fases al pie de la letra. Nunca improvisar el flujo ni mezclar las etapas. Estas skills NO aparecen en la lista de autoinvocación (`disable-model-invocation: true`); se cargan solo bajo demanda explícita del usuario.
 
 ## Spec Driven Development - Agente verificador
 

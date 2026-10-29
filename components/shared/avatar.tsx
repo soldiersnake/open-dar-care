@@ -20,7 +20,7 @@ const colorClasses: Record<AvatarColor, string> = {
 const sizeClasses = {
   sm: "h-10 w-10 text-base",
   md: "h-12 w-12 text-[19px]",
-  xl: "h-[84px] w-[84px] text-[34px]",
+  xl: "h-21 w-21 text-[34px]",
 } as const;
 
 export type AvatarSize = keyof typeof sizeClasses;

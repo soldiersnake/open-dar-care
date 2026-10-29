@@ -9,7 +9,7 @@ export function InfoList({ items }: { items: InfoListItem[] }) {
       {items.map((item, index) => (
         <div
           key={item.label}
-          className={`flex items-center justify-between px-[18px] py-[15px] ${
+          className={`flex items-center justify-between px-4.5 py-3.75 ${
             index < items.length - 1 ? "border-b border-line-soft" : ""
           }`}
         >

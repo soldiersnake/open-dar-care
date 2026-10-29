@@ -35,7 +35,7 @@ export function PostCard({ post }: { post: Post }) {
   const avatarClasses = avatarByCategory[post.category];
 
   return (
-    <article className="rounded-[20px] border border-line bg-panel px-[22px] py-5 shadow-[0_4px_16px_-12px_rgba(120,90,60,0.5)]">
+    <article className="rounded-[20px] border border-line bg-panel px-5.5 py-5 shadow-[0_4px_16px_-12px_rgba(120,90,60,0.5)]">
       <div className="mb-3.5 flex items-center gap-3">
         <div
           className={`flex h-11 w-11 flex-none items-center justify-center rounded-full font-display text-[17px] font-semibold ${avatarClasses.bg} ${avatarClasses.ink}`}
@@ -66,7 +66,7 @@ export function PostCard({ post }: { post: Post }) {
           </div>
         </div>
         <div
-          className={`flex items-center gap-[7px] rounded-full px-3 py-1.5 ${categoryBadgeClasses[post.category]}`}
+          className={`flex items-center gap-1.75 rounded-full px-3 py-1.5 ${categoryBadgeClasses[post.category]}`}
         >
           <span className={`h-2 w-2 rounded-full ${categoryDotClasses[post.category]}`} />
           <span className="text-xs font-extrabold tracking-[0.5px]">
@@ -85,7 +85,7 @@ export function PostCard({ post }: { post: Post }) {
       {post.photoCaption && (
         <a
           href="#"
-          className="mt-3.5 flex h-[200px] flex-col items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-photo-line bg-photo-bg text-photo-ink"
+          className="mt-3.5 flex h-50 flex-col items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-photo-line bg-photo-bg text-photo-ink"
         >
           <svg
             width="30"
@@ -105,8 +105,8 @@ export function PostCard({ post }: { post: Post }) {
         </a>
       )}
 
-      <div className="mt-4 flex items-center gap-[18px] border-t border-line-soft pt-3.5">
-        <span className="flex items-center gap-[7px] text-sm font-bold text-accent-bright">
+      <div className="mt-4 flex items-center gap-4.5 border-t border-line-soft pt-3.5">
+        <span className="flex items-center gap-1.75 text-sm font-bold text-accent-bright">
           <svg
             width="19"
             height="19"
@@ -123,7 +123,7 @@ export function PostCard({ post }: { post: Post }) {
         </span>
         <a
           href="#"
-          className="flex items-center gap-[7px] text-sm font-bold text-muted-soft"
+          className="flex items-center gap-1.75 text-sm font-bold text-muted-soft"
         >
           <svg
             width="18"
