@@ -13,7 +13,7 @@ function BackLink() {
   return (
     <Link
       href="/kids"
-      className="mb-5 flex items-center gap-[7px] text-[14px] font-bold text-muted-soft"
+      className="mb-5 flex items-center gap-1.75 text-[14px] font-bold text-muted-soft"
     >
       <svg
         width="18"
@@ -34,19 +34,19 @@ function BackLink() {
 
 function Hero({ kid }: { kid: Kid }) {
   return (
-    <div className="flex items-center gap-[18px]">
+    <div className="flex items-center gap-4.5">
       <Avatar initials={kid.initials} color={kid.avatarColor} size="xl" />
       <div className="min-w-0 flex-1">
         <h1 className="m-0 font-display text-[28px] font-semibold text-ink">
           {kid.name}
         </h1>
-        <p className="m-0 mt-[3px] text-[15px] text-muted-soft">
+        <p className="m-0 mt-0.75 text-[15px] text-muted-soft">
           {kid.age} años · Sala {kid.room}
         </p>
       </div>
       <a
         href="#"
-        className="rounded-[12px] border-[1.5px] border-line bg-panel px-4 py-[9px] text-[14px] font-bold text-ink-body"
+        className="rounded-[12px] border-[1.5px] border-line bg-panel px-4 py-2.25 text-[14px] font-bold text-ink-body"
       >
         Editar
       </a>
@@ -56,7 +56,7 @@ function Hero({ kid }: { kid: Kid }) {
 
 function AllergyBanner({ note }: { note: string }) {
   return (
-    <div className="flex gap-3.5 rounded-[16px] bg-allergy-bg px-[18px] py-4">
+    <div className="flex gap-3.5 rounded-[16px] bg-allergy-bg px-4.5 py-4">
       <div className="flex h-10 w-10 flex-none items-center justify-center rounded-[11px] bg-allergy-icon">
         <svg
           width="22"
@@ -73,7 +73,7 @@ function AllergyBanner({ note }: { note: string }) {
         </svg>
       </div>
       <div className="min-w-0">
-        <div className="mb-[2px] text-[15px] font-extrabold text-allergy-title">
+        <div className="mb-0.5 text-[15px] font-extrabold text-allergy-title">
           Alergias y notas
         </div>
         <div className="text-[14.5px] leading-[1.5] text-allergy-text">
@@ -88,7 +88,7 @@ function DaySummaryButton() {
   return (
     <a
       href="#"
-      className="flex w-full items-center justify-center gap-[9px] rounded-[14px] bg-ink p-[13px] text-[15px] font-extrabold text-white"
+      className="flex w-full items-center justify-center gap-2.25 rounded-[14px] bg-ink p-3.25 text-[15px] font-extrabold text-white"
     >
       <svg
         width="18"
@@ -133,7 +133,7 @@ function LinkedParentRow({ parent }: { parent: LinkedParent }) {
 
 function LinkParentCard({ parents }: { parents: LinkedParent[] }) {
   return (
-    <div className="rounded-[16px] border border-line bg-panel px-[18px] py-4">
+    <div className="rounded-[16px] border border-line bg-panel px-4.5 py-4">
       <div className="mb-3.5 text-[12.5px] font-extrabold tracking-[0.8px] text-label">
         PADRES VINCULADOS
       </div>
@@ -180,8 +180,8 @@ async function KidProfile({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-start gap-[26px]">
-      <div className="flex min-w-[300px] flex-1 flex-col gap-[18px]">
+    <div className="flex flex-wrap items-start gap-6.5">
+      <div className="flex min-w-75 flex-1 flex-col gap-4.5">
         <Hero kid={kid} />
         {kid.allergiesNote && <AllergyBanner note={kid.allergiesNote} />}
         <InfoList
@@ -193,7 +193,7 @@ async function KidProfile({ id }: { id: string }) {
         />
       </div>
 
-      <div className="flex w-[300px] flex-none flex-col gap-3.5">
+      <div className="flex w-75 flex-none flex-col gap-3.5">
         <DaySummaryButton />
         <LinkParentCard parents={kid.parents} />
       </div>
@@ -211,7 +211,7 @@ export default function KidProfilePage({
       <Sidebar />
 
       <main className="min-w-0 flex-1 md:h-screen md:overflow-y-auto">
-        <div className="mx-auto w-full max-w-[820px] px-5 pb-20 pt-[98px] md:px-10 md:pt-[34px]">
+        <div className="mx-auto w-full max-w-205 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
           <BackLink />
 
           <Suspense fallback={null}>

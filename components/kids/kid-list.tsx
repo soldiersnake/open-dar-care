@@ -40,7 +40,7 @@ export function KidList() {
 
   return (
     <>
-      <div className="mb-[22px] flex items-center gap-[11px] rounded-[14px] border border-line bg-panel px-4 py-3">
+      <div className="mb-5.5 flex items-center gap-2.75 rounded-[14px] border border-line bg-panel px-4 py-3">
         <SearchIcon />
         <input
           type="text"
