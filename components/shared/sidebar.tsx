@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type JSX } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems, mockUser, type NavItem } from "@/lib/feed-data";
 
@@ -136,8 +137,8 @@ function UserBlock() {
           <div className="text-sm font-extrabold text-ink">{mockUser.name}</div>
           <div className="text-xs text-muted">{mockUser.role}</div>
         </div>
-        <a
-          href="#"
+        <Link
+          href="/login"
           title="Cerrar sesión"
           className="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-bg text-muted-soft"
         >
@@ -153,7 +154,7 @@ function UserBlock() {
           >
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
           </svg>
-        </a>
+        </Link>
       </div>
     </div>
   );

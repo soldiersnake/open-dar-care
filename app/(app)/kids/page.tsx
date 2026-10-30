@@ -1,6 +1,5 @@
 import { KidList } from "@/components/kids/kid-list";
 import { PageHeader } from "@/components/shared/page-header";
-import { Sidebar } from "@/components/shared/sidebar";
 
 function AddKidButton() {
   return (
@@ -27,20 +26,14 @@ function AddKidButton() {
 
 export default function KidsPage() {
   return (
-    <div className="flex min-h-screen bg-bg md:h-screen md:overflow-hidden">
-      <Sidebar />
+    <div className="mx-auto w-full max-w-220 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
+      <PageHeader
+        eyebrow="GESTIÓN"
+        title="Niños"
+        action={<AddKidButton />}
+      />
 
-      <main className="min-w-0 flex-1 md:h-screen md:overflow-y-auto">
-        <div className="mx-auto w-full max-w-220 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
-          <PageHeader
-            eyebrow="GESTIÓN"
-            title="Niños"
-            action={<AddKidButton />}
-          />
-
-          <KidList />
-        </div>
-      </main>
+      <KidList />
     </div>
   );
 }

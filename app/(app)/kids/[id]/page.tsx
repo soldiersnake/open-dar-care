@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
 import { InfoList } from "@/components/shared/info-list";
-import { Sidebar } from "@/components/shared/sidebar";
 import { getKidById } from "@/lib/kids-data";
 import type { Kid, LinkedParent } from "@/lib/kids-data";
 import { kids } from "@/lib/kids-data";
@@ -207,20 +206,14 @@ export default function KidProfilePage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <div className="flex min-h-screen bg-bg md:h-screen md:overflow-hidden">
-      <Sidebar />
+    <div className="mx-auto w-full max-w-205 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
+      <BackLink />
 
-      <main className="min-w-0 flex-1 md:h-screen md:overflow-y-auto">
-        <div className="mx-auto w-full max-w-205 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
-          <BackLink />
-
-          <Suspense fallback={null}>
-            {params.then(({ id }) => (
-              <KidProfile id={id} />
-            ))}
-          </Suspense>
-        </div>
-      </main>
+      <Suspense fallback={null}>
+        {params.then(({ id }) => (
+          <KidProfile id={id} />
+        ))}
+      </Suspense>
     </div>
   );
 }
