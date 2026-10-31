@@ -21,7 +21,75 @@ export type Kid = {
   room: string;
   entryDate: string;
   parents: LinkedParent[];
+  medicalNotes?: string;
 };
+
+export const ROOMS = ["Soles", "Lunas", "Estrellas"] as const;
+
+// The form filled in the add-kid modal (values as typed, before derivation)
+export type KidDraft = {
+  name: string;
+  birthDate: string; // ISO date from <input type="date"> (e.g. "2022-03-12")
+  room: string;
+  allergies: string; // comma-separated tags (e.g. "Maní, Lactosa")
+  notes: string;
+};
+
+const AVATAR_COLOR_PALETTE = ["sky", "pink", "green", "yellow", "purple"] as const;
+
+const MONTH_ABBREVIATIONS = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+] as const;
+
+// Derives a mock Kid from the add-kid modal draft; same shape as the static kids.
+export function createKidFromForm(draft: KidDraft, nextId: number, now = new Date()): Kid {
+  const allergyTags = draft.allergies
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
+
+  const name = draft.name.trim();
+  const birth = new Date(`${draft.birthDate}T00:00:00`);
+  const birthdayNotReachedYet =
+    now.getMonth() < birth.getMonth() ||
+    (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
+  const age = now.getFullYear() - birth.getFullYear() - (birthdayNotReachedYet ? 1 : 0);
+
+  const kid: Kid = {
+    id: nextId,
+    name,
+    age,
+    initials: name.charAt(0).toUpperCase(),
+    avatarColor: AVATAR_COLOR_PALETTE[(nextId - 1) % AVATAR_COLOR_PALETTE.length],
+    birthDate: draft.birthDate,
+    room: draft.room,
+    entryDate: `${MONTH_ABBREVIATIONS[now.getMonth()]} ${now.getFullYear()}`,
+    parents: [],
+  };
+
+  if (allergyTags.length > 0) {
+    kid.allergyTag = allergyTags[0].toUpperCase();
+    kid.allergiesNote = `Alergia a ${allergyTags.map((tag) => tag.toLowerCase()).join(", ")}.`;
+  }
+
+  const notes = draft.notes.trim();
+  if (notes.length > 0) {
+    kid.medicalNotes = notes;
+  }
+
+  return kid;
+}
 
 export const kids: Kid[] = [
   {

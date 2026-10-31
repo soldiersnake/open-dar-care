@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { KidCard } from "@/components/kids/kid-card";
 import { SectionDivider } from "@/components/shared/section-divider";
-import { kids } from "@/lib/kids-data";
+import { kids as mockKids, type Kid } from "@/lib/kids-data";
 
 function SearchIcon() {
   return (
@@ -28,14 +28,14 @@ function countLabel(count: number): string {
   return `${count} ${count === 1 ? "niño" : "niños"}`;
 }
 
-export function KidList() {
+export function KidList({ kids }: { kids: Kid[] }) {
   const [query, setQuery] = useState("");
 
   const normalizedQuery = query.trim().toLowerCase();
   const filteredKids = useMemo(
     () =>
       kids.filter((kid) => kid.name.toLowerCase().includes(normalizedQuery)),
-    [normalizedQuery],
+    [kids, normalizedQuery],
   );
 
   return (
@@ -63,7 +63,13 @@ export function KidList() {
       ) : (
         <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
           {filteredKids.map((kid) => (
-            <KidCard key={kid.id} kid={kid} />
+            // Kids created client-side have no prerendered profile route, so their
+            // card renders without navigation
+            <KidCard
+              key={kid.id}
+              kid={kid}
+              interactive={mockKids.some((mock) => mock.id === kid.id)}
+            />
           ))}
         </div>
       )}
