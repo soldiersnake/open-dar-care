@@ -27,12 +27,9 @@ function Chevron() {
   );
 }
 
-export function KidCard({ kid }: { kid: Kid }) {
-  return (
-    <Link
-      href={`/kids/${kid.id}`}
-      className="flex min-w-0 items-center gap-3.5 rounded-[18px] border border-line bg-panel p-4 shadow-[0_4px_14px_-12px_rgba(120,90,60,0.5)] transition duration-150 hover:-translate-y-[2px] hover:border-[#F2A78E]"
-    >
+export function KidCard({ kid, interactive = true }: { kid: Kid; interactive?: boolean }) {
+  const cardContent = (
+    <>
       <Avatar initials={kid.initials} color={kid.avatarColor} size="md" />
       <div className="min-w-0 flex-1">
         <div className="font-display text-[16px] font-semibold text-ink">
@@ -49,6 +46,25 @@ export function KidCard({ kid }: { kid: Kid }) {
       ) : (
         <Chevron />
       )}
+    </>
+  );
+
+  // Kids created client-side have no prerendered profile route, so they render
+  // as a plain card without navigation until persistence lands.
+  if (!interactive) {
+    return (
+      <div className="flex min-w-0 cursor-default items-center gap-3.5 rounded-[18px] border border-line bg-panel p-4 shadow-[0_4px_14px_-12px_rgba(120,90,60,0.5)]">
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/kids/${kid.id}`}
+      className="flex min-w-0 items-center gap-3.5 rounded-[18px] border border-line bg-panel p-4 shadow-[0_4px_14px_-12px_rgba(120,90,60,0.5)] transition duration-150 hover:-translate-y-[2px] hover:border-[#F2A78E]"
+    >
+      {cardContent}
     </Link>
   );
 }
