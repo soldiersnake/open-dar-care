@@ -28,7 +28,7 @@ export default function ActivateAccount() {
           activar la cuenta.
         </p>
 
-        <div className="mb-5.5 flex items-center gap-3.5 rounded-[16px] border-[1.5px] border-[#EADFD0] bg-white px-4 py-3.5">
+        <div className="mb-5.5 flex items-center gap-3.5 rounded-2xl border-[1.5px] border-[#EADFD0] bg-white px-4 py-3.5">
           <div className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-avatar-kids font-display text-[19px] font-semibold text-avatar-kids-ink">
             M
           </div>
@@ -70,7 +70,7 @@ export default function ActivateAccount() {
         />
 
         <label className="mb-6 flex cursor-pointer items-start gap-3 rounded-[14px] bg-[#FBF1D6] px-4 py-3.5">
-          <span className="mt-1 flex h-6 w-6 flex-none items-center justify-center rounded-[8px] bg-[#5FB97E]">
+          <span className="mt-1 flex h-6 w-6 flex-none items-center justify-center rounded-lg bg-[#5FB97E]">
             <svg
               width="15"
               height="15"

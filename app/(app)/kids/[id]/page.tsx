@@ -55,7 +55,7 @@ function Hero({ kid }: { kid: Kid }) {
 
 function AllergyBanner({ note }: { note: string }) {
   return (
-    <div className="flex gap-3.5 rounded-[16px] bg-allergy-bg px-4.5 py-4">
+    <div className="flex gap-3.5 rounded-2xl bg-allergy-bg px-4.5 py-4">
       <div className="flex h-10 w-10 flex-none items-center justify-center rounded-[11px] bg-allergy-icon">
         <svg
           width="22"
@@ -132,7 +132,7 @@ function LinkedParentRow({ parent }: { parent: LinkedParent }) {
 
 function LinkParentCard({ parents }: { parents: LinkedParent[] }) {
   return (
-    <div className="rounded-[16px] border border-line bg-panel px-4.5 py-4">
+    <div className="rounded-2xl border border-line bg-panel px-4.5 py-4">
       <div className="mb-3.5 text-[12.5px] font-extrabold tracking-[0.8px] text-label">
         PADRES VINCULADOS
       </div>

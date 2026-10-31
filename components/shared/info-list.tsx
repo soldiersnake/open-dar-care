@@ -5,7 +5,7 @@ export type InfoListItem = {
 
 export function InfoList({ items }: { items: InfoListItem[] }) {
   return (
-    <div className="overflow-hidden rounded-[16px] border border-line bg-panel">
+    <div className="overflow-hidden rounded-2xl border border-line bg-panel">
       {items.map((item, index) => (
         <div
           key={item.label}
