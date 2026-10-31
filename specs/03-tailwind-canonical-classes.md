@@ -62,3 +62,15 @@ Regla general: `N px → N/4` (ej. 18px→4.5, 38px→9.5, 248px→62, 760px→1
 ## Riesgos
 
 - Bajos: el CSS generado es idéntico; cualquier desvío visual se detecta en la comparación de capturas y se revierte clase por clase.
+
+---
+
+## Extensión post-implementación — `rounded-2xl` / `rounded-lg` (31 oct 2026)
+
+Signed off: el linter (`rounded-[16px] can be written as rounded-2xl` / `rounded-[8px] → rounded-lg`) ahora marca radios que en la pasada original se dejaron por "sin equivalente canónico". En Tailwind v4 esos valores SÍ existen sobre la escala de radios (`rounded-2xl` = 1rem = 16px, `rounded-lg` = 0.5rem = 8px a root 16px). Fix con cero cambio visual (5 conversiones en 3 archivos):
+
+- `components/shared/info-list.tsx`: `rounded-[16px]` → `rounded-2xl` (card de datos).
+- `app/(app)/kids/[id]/page.tsx`: `rounded-[16px]` → `rounded-2xl` (×2: banner de alergias + card de padres).
+- `app/(auth)/activar-cuenta/page.tsx`: `rounded-[16px]` → `rounded-2xl` (card de invitación) · `rounded-[8px]` → `rounded-lg` (check del checkbox).
+
+Verificación: grep `rounded-\[(8|16)px\]` → 0; `npx tsc --noEmit` + `npm run lint` + `npm run build` OK (16 rutas); radios computados por Playwright = 16px / 8px exactos y paridad visual de `/kids/1` y `/activar-cuenta` a 1280px sin corrimientos (`.playwright-mcp/fix-roundings-*.png`), consola 0/0. Quedan intactas las demás exclusiones (`rounded-[12/14/18/20/24px]` sin clase canónica, `shadow-[…]`, `bg-[…]`, `border-[1.5px]`, `text-[…]`).
