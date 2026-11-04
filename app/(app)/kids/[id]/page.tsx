@@ -107,9 +107,6 @@ function DaySummaryButton() {
   );
 }
 
-// (The linked-parents block moved to client: components/kids/link-parent-card.tsx)
-
-
 // With cacheComponents, all known mock ids are prerendered at build time;
 // unknown ids fall back to request-time rendering and hit notFound().
 export function generateStaticParams() {
