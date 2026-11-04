@@ -140,7 +140,7 @@ async function KidProfile({ id }: { id: string }) {
 
       <div className="flex w-75 flex-none flex-col gap-3.5">
         <DaySummaryButton />
-        <LinkParentCard parents={kid.parents} />
+        <LinkParentCard parents={kid.parents} kidName={kid.name} />
       </div>
     </div>
   );

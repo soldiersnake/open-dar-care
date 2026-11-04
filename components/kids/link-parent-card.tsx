@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
-import type { LinkedParent } from "@/lib/kids-data";
+import { LinkParentModal } from "@/components/kids/link-parent-modal";
+import { generateInvitationCode, type LinkedParent } from "@/lib/kids-data";
 
 function LinkedParentRow({ parent }: { parent: LinkedParent }) {
   return (
@@ -28,9 +29,23 @@ function LinkedParentRow({ parent }: { parent: LinkedParent }) {
 
 // Client owner of the linked-parents list: mock rows plus those added by the
 // link-parent modal (client-side only, no persistence).
-export function LinkParentCard({ parents }: { parents: LinkedParent[] }) {
+export function LinkParentCard({
+  parents,
+  kidName,
+}: {
+  parents: LinkedParent[];
+  kidName: string;
+}) {
   const [rows, setRows] = useState<LinkedParent[]>(parents);
   const [modalOpen, setModalOpen] = useState(false);
+  const [invitationCode, setInvitationCode] = useState("");
+
+  const openModal = () => {
+    // The code is generated in the open handler, never during the initial
+    // render: random values must not reach the SSR tree (cacheComponents).
+    setInvitationCode(generateInvitationCode());
+    setModalOpen(true);
+  };
 
   return (
     <div className="rounded-2xl border border-line bg-panel px-4.5 py-4">
@@ -44,7 +59,7 @@ export function LinkParentCard({ parents }: { parents: LinkedParent[] }) {
         <button
           type="button"
           aria-haspopup="dialog"
-          onClick={() => setModalOpen(true)}
+          onClick={openModal}
           className="flex cursor-pointer items-center gap-3 pt-2"
         >
           <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full border-[1.5px] border-dashed border-[#D8CBBA] text-photo-ink">
@@ -67,9 +82,13 @@ export function LinkParentCard({ parents }: { parents: LinkedParent[] }) {
         </button>
       </div>
 
-      {modalOpen &&
-        // LinkParentModal is wired in step 3; nothing renders yet.
-        null}
+      {modalOpen ? (
+        <LinkParentModal
+          kidName={kidName}
+          invitationCode={invitationCode}
+          onClose={() => setModalOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
