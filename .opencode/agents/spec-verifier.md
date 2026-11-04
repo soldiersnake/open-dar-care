@@ -27,6 +27,9 @@ permissions:
   - action: shell
     resource: "npm run dev *"
     effect: allow
+  - action: shell
+    resource: "Stop-Process *"
+    effect: allow
 ---
 
 Eres el agente verificador de criterios de aceptación de specs de este proyecto.
@@ -85,6 +88,22 @@ breaking changes y flags no-default (`cacheComponents`, `partialPrefetching`).
 - Compara cada captura **con visión** contra el mockup correspondiente
   (`references/pantallas/*.dc.html` y `references/screenshots/*.png`). El
   objetivo es fidelidad visual: colores, tipografía, espaciado, jerarquía.
+
+# Cierre del dev server (obligatorio al finalizar)
+
+El puerto 3000 debe quedar libre al terminar la verificación. Si tú ejecutaste
+`npm run dev` en background durante este trabajo:
+
+- Guarda desde el arranque el PID del proceso que lanzaste (y el del grupo de
+  procesos que él abre) para poder detenerlo de forma certera.
+- Antes de redactar el **Reporte final**, detén ese proceso npm y todos los
+  procesos hijos que abrió (turbopack/node). Verifica que el puerto 3000 quedó
+  libre (en Windows: ya no existe un listener en el puerto 3000). Si sigue
+  ocupado, mata el proceso que quedó a la escucha antes de continuar.
+- **Nunca mates un proceso que no sea el que tú lanzaste.** Si al iniciar el
+  puerto 3000 ya estaba ocupado por un dev server ajeno a esta verificación,
+  úsalo tal cual y NO lo detengas al final: repórtalo en el reporte final
+  ("puerto 3000 estaba en uso por un proceso ajeno; sigue ocupado").
 
 # Arreglar código cuando un criterio falla
 
