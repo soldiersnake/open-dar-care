@@ -1,6 +1,6 @@
 # SPEC 06 — Modal "Vincular padre" en `/kids/[id]`
 
-**Estado:** Aprobado
+**Estado:** Implementado — Verificado ✅ por Verificador (spec-verifier), 4 nov 2026
 **Fecha:** 2026-11-04
 **Depende de:** SPEC 02
 
@@ -116,17 +116,40 @@ Reglas de derivación de `createPendingParentFromForm`:
 
 ## Criterios de aceptación
 
-- [ ] `npm run build` + `npx tsc --noEmit` + `npm run lint` pasan; la consola de `/kids/[id]` da 0 errores y 0 warnings con el modal cerrado, abierto, con errores de validación y tras enviar.
-- [ ] El botón "Vincular otro padre" es un `<button>` real con `aria-haspopup="dialog"` que abre el modal, con la apariencia intacta (círculo punteado `#D8CBBA` + texto `text-accent-edit`).
-- [ ] El modal a 1280px es visualmente fiel a `vincular-padre.dc.html`: header "Vincular padre / a {niño}" con X, banner azul, labels eyebrow, estilos de inputs/card, chips de parentesco, caja amarilla dashed y botón gradiente "Enviar invitación" con el ícono paper plane, y el subtítulo/banner interpolan el nombre real del niño (`getKidById`).
-- [ ] PARENTESCO muestra exactamente 3 opciones (Mamá, Papá, Tutor/a), llega con "Mamá" activo y el click mueve el estilo activo entre chips.
-- [ ] El código de la caja amarilla son 5 caracteres del alfabeto `ABCDEFGHJKMNPQRSTUVWXYZ23456789` y se regenera (distinto del anterior) en cada apertura del modal; el texto "Vence en 7 días" está siempre.
-- [ ] Enviar con nombre o email vacíos NO cierra el modal y muestra "Este campo es obligatorio" bajo cada incompleto, con color `--color-accent-edit`; al completar el campo el mensaje desaparece.
-- [ ] Enviar con un email con formato inválido (sin `@` o sin dominio) muestra "Ingresa un email válido" bajo EMAIL y el modal no se cierra.
-- [ ] Enviar con datos válidos cierra el modal y la primera fila de "PADRES VINCULADOS" es la nueva: nombre tal cual, subtexto `{relation} · {email}`, avatar con inicial y color derivado (^nextId % 2), badge PENDIENTE.
-- [ ] X del header, overlay y `Esc` cierran sin agregar nada; al reabrir, el form está vacío, "Mamá" activo y un código nuevo.
-- [ ] Recargar el perfil vuelve al mock del niño (sin persistencia de la fila).
-- [ ] A 375px el modal es usable: card a ancho completo, campos visibles con scroll, enviar y cerrar operativos.
+> Verificación completa (Verificador, 4 nov 2026): `npm run build` OK (Turbopack
+> "Compiled successfully", Cache Components + Partial Prefetching activos,
+> `○ /kids/1` y `/kids/2` estáticos, resto `◐ /kids/[id]`), `npx tsc --noEmit`
+> exit 0 y `npm run lint` exit 0. Sesión completa Playwright (capturas en
+> `.playwright-mcp/06-verify-*.png`) con consola 0 errores/0 warnings en los 4
+> estados pedidos (cerrado, abierto, errores de validación, tras enviar).
+> Context7 `/vercel/next.js`: `io.mdx` / `08-caching.mdx` ("Random values and
+> timestamps") — `Math.random()` ejecutado en el navegador (handler de apertura)
+> queda fuera del prerender y es correcto; `05-server-and-client-components.mdx`
+> / `use-client.mdx` — props server→client serializables (`parents`, `kidName`;
+> las funciones solo cruzan entre clients, no desde la página server).
+
+- [x] `npm run build` + `npx tsc --noEmit` + `npm run lint` pasan; la consola de `/kids/[id]` da 0 errores y 0 warnings con el modal cerrado, abierto, con errores de validación y tras enviar.
+  - Evidencia (Verificador, 4 nov 2026): build OK (16/16 prerenderizados, `/kids/1` estático), tsc y lint sin output; consola Playwright de la sesión completa (`.playwright-mcp/06-verify-*.png` + `console-2026-11-04T19-54-38-899Z.log`): solo logs de DevTools/HMR — 0 errores/0 warnings.
+- [x] El botón "Vincular otro padre" es un `<button>` real con `aria-haspopup="dialog"` que abre el modal, con la apariencia intacta (círculo punteado `#D8CBBA` + texto `text-accent-edit`).
+  - Evidencia: evaluate en `/kids/1` — `isButton: true`, `aria-haspopup="dialog"`, `cursor: pointer` (`components/kids/link-parent-card.tsx`); captura `.playwright-mcp/06-verify-saved-row.png` (círculo punteado + texto acento).
+- [x] El modal a 1280px es visualmente fiel a `vincular-padre.dc.html`: header "Vincular padre / a {niño}" con X, banner azul, labels eyebrow, estilos de inputs/card, chips de parentesco, caja amarilla dashed y botón gradiente "Enviar invitación" con el ícono paper plane, y el subtítulo/banner interpolan el nombre real del niño (`getKidById`).
+  - Evidencia: comparación por visión de `.playwright-mcp/06-verify-modal-1280.png` vs `.playwright-mcp/06-verify-mockup-1280.png` (mockup servido por HTTP en :8899) — header/subtítulo "a Mateo Fernández" + X `#F0E6D8`, banner `#E3ECFB` con ⓘ y texto idéntico ("Solo verá el feed de Mateo.", primer nombre como el mock), placeholders exactos, chips, caja `#FBF1D6` dashed con código Fredoka + tracking y "Vence en 7 días", gradiente + paper plane. Única diferencia: overlay del modal sobre el perfil (decisión de modal real de la spec).
+- [x] PARENTESCO muestra exactamente 3 opciones (Mamá, Papá, Tutor/a), llega con "Mamá" activo y el click mueve el estilo activo entre chips.
+  - Evidencia: evaluate — chips exactos `["Mamá","Papá","Tutor/a"]`, "Mamá" con `border-[#9FB8EC]`/`bg-[#CCD8F4]` al abrir; tras click en "Papá": Papá activo y Mamá cambia a `border-[#ECE0D0]`/`bg-[#FFFDF9]` (captura `.playwright-mcp/06-verify-invalid-email.png`, chip activo ya movido a Papá).
+- [x] El código de la caja amarilla son 5 caracteres del alfabeto `ABCDEFGHJKMNPQRSTUVWXYZ23456789` y se regenera (distinto del anterior) en cada apertura del modal; el texto "Vence en 7 días" está siempre.
+  - Evidencia: aperturas consecutivas generaron `J7EDB` → `GDBJ4` (evaluate confirma 5 chars y `alphabetOk: true` contra el alfabeto); "Vence en 7 días" presente en todas las capturas; la generación vive en `openModal` (handler), nunca en el render inicial.
+- [x] Enviar con nombre o email vacíos NO cierra el modal y muestra "Este campo es obligatorio" bajo cada incompleto, con color `--color-accent-edit`; al completar el campo el mensaje desaparece.
+  - Evidencia: click en "Enviar invitación" vacío → `stillOpen: true` y 2 mensajes "Este campo es obligatorio" en `rgb(197, 80, 58)` (`#C5503A` = `--color-accent-edit`); al tipear, el mensaje por campo desaparece (caso Valeria: nombre sin error y email con error en simultáneo, `nameErrorGone: true`).
+- [x] Enviar con un email con formato inválido (sin `@` o sin dominio) muestra "Ingresa un email válido" bajo EMAIL y el modal no se cierra.
+  - Evidencia: EMAIL "valeria-munoz" + submit → `invalidMsg: "Ingresa un email válido"`, `modalStillOpen: true`; captura `.playwright-mcp/06-verify-invalid-email.png`.
+- [x] Enviar con datos válidos cierra el modal y la primera fila de "PADRES VINCULADOS" es la nueva: nombre tal cual, subtexto `{relation} · {email}`, avatar con inicial y color derivado (^nextId % 2), badge PENDIENTE.
+  - Evidencia: guardado con chip "Papá" → `modalClosedAfterSave: true`, primera fila `Valeria Muñoz / Papá · valeria@ejemplo.com / PENDIENTE` con avatar `bg-avatar-purple` (nextId 3, impar → purple; la 2ª invitación del paso 4 salió azul con id 4 — alternancia ✓); captura `.playwright-mcp/06-verify-saved-row.png` (fila indistinguible en formato de las mock).
+- [x] X del header, overlay y `Esc` cierran sin agregar nada; al reabrir, el form está vacío, "Mamá" activo y un código nuevo.
+  - Evidencia: `closedByX / closedByOverlay / closedByEsc: true` (los tres); al reabrir: `nameValue/emailValue: ""`, `mamaActive: true` y código nuevo (`J7EDB` → `GDBJ4`); ninguna fila agregada en ningún cierre.
+- [x] Recargar el perfil vuelve al mock del niño (sin persistencia de la fila).
+  - Evidencia: tras los guardados de la sesión (Valeria/Ana), `page.reload()` → `rowsAfterReload: 2` (mock de Mateo) y `inviteGone: true`.
+- [x] A 375px el modal es usable: card a ancho completo, campos visibles con scroll, enviar y cerrar operativos.
+  - Evidencia: `cardBox = { x: 16, width: 343.3 }` (viewport 375 → ancho completo con el padding 16 del overlay); capturas `.playwright-mcp/06-verify-modal-375-top.png` y `06-verify-modal-375-bottom.png` (scroll hasta código/botón); `Esc` cierra (`closedByEsc: true`) y un guardado válido a 375px antepuso a "Ana Beltrán · Mamá · ana@ejemplo.com" con badge PENDIENTE (captura `06-verify-375-profile-saved.png`).
 
 ## Decisiones tomadas y descartadas
 
@@ -137,8 +160,10 @@ Reglas de derivación de `createPendingParentFromForm`:
 - **"Mamá" preseleccionado** (confirmado; el mockup lo muestra activo): nunca hay estado vacío y el chip no lleva validación.
 - **Código random de 5 chars por apertura** (confirmado) vs fijo `7K4P9` o expiración real: el fijo chocaría contra el criterio "regenera en cada apertura"; la expiración real agrega un timer sin UI que lo necesite. Alfabeto sin 0/O/1/I/L para evitar lecturas ambiguas.
 - **"Vence en 7 días" como texto fijo** (confirmado): sin expiración funcional ni estado en otra parte.
+- **Implementación: el banner usa el primer nombre del niño** ("Solo verá el feed de Mateo."), igual que el mockup; el subtítulo del header usa el nombre completo ("a Mateo Fernández"). Ambos interpolan desde `kid` del perfil.
 - **`note` = email y `relation` = parentesco** (confirmado) en la fila: reutiliza el formato existente `relation · note` de las filas mock sin inventar props.
 - **Reutilizar `LinkedParent`** (confirmado): no hay campos nuevos; `avatarColor` solo tiene `"blue" | "purple"` y alterna por `nextId % 2`.
+- **Implementación: `nextId` sobre las filas actuales** (Verificador, 4 nov 2026) vs "máximo de los `parents` del mock + 1" (modelo de datos): con el cálculo estricto del mock, la 2ª invitación reusaría el `id` 3 (keys de React duplicadas y color sin alternancia). El cálculo corre sobre `rows` (mock + agregadas): la 1ª invitación sale `id` 3 = "mock max + 1" ✓ y las siguientes incrementan (`4`, `5`, …) manteniendo la alternancia `nextId % 2`. Verificado en la sesión (`bg-avatar-purple` con id 3, `bg-avatar-parent` con id 4).
 - **Mudar el bloque PADRES VINCULADOS a un client component** (patrón SPEC 05): la página sigue server (`getKidById` + `cacheComponents`) y pasa `parents`/`kidName` como props serializables.
 - **Descartado: abrir `mailto:` al enviar.** El mockup no lo muestra y complica la verificación con un popup del SO.
 - **Descartado: persistencia localStorage** para la fila nueva: sería el primer estado persistente del proyecto; merece spec propia.
