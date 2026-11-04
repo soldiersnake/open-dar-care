@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/shared/avatar";
-import { Badge } from "@/components/shared/badge";
 import { InfoList } from "@/components/shared/info-list";
+import { LinkParentCard } from "@/components/kids/link-parent-card";
 import { getKidById } from "@/lib/kids-data";
-import type { Kid, LinkedParent } from "@/lib/kids-data";
+import type { Kid } from "@/lib/kids-data";
 import { kids } from "@/lib/kids-data";
 
 function BackLink() {
@@ -107,62 +107,8 @@ function DaySummaryButton() {
   );
 }
 
-function LinkedParentRow({ parent }: { parent: LinkedParent }) {
-  return (
-    <div className="flex items-center gap-3">
-      <Avatar
-        initials={parent.name[0]}
-        color={parent.avatarColor === "purple" ? "parentPurple" : parent.avatarColor}
-        size="sm"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="text-[14.5px] font-extrabold text-ink">
-          {parent.name}
-        </div>
-        <div className="text-[12.5px] text-muted">
-          {parent.relation} · {parent.note}
-        </div>
-      </div>
-      <Badge variant={parent.status} size="sm">
-        {parent.status === "active" ? "ACTIVA" : "PENDIENTE"}
-      </Badge>
-    </div>
-  );
-}
+// (The linked-parents block moved to client: components/kids/link-parent-card.tsx)
 
-function LinkParentCard({ parents }: { parents: LinkedParent[] }) {
-  return (
-    <div className="rounded-2xl border border-line bg-panel px-4.5 py-4">
-      <div className="mb-3.5 text-[12.5px] font-extrabold tracking-[0.8px] text-label">
-        PADRES VINCULADOS
-      </div>
-      <div className="flex flex-col gap-3.5">
-        {parents.map((parent) => (
-          <LinkedParentRow key={parent.id} parent={parent} />
-        ))}
-        <a href="#" className="flex items-center gap-3 pt-2">
-          <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full border-[1.5px] border-dashed border-[#D8CBBA] text-photo-ink">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </span>
-          <span className="text-[14.5px] font-extrabold text-accent-edit">
-            Vincular otro padre
-          </span>
-        </a>
-      </div>
-    </div>
-  );
-}
 
 // With cacheComponents, all known mock ids are prerendered at build time;
 // unknown ids fall back to request-time rendering and hit notFound().
