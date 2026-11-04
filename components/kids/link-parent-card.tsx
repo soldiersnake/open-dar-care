@@ -4,7 +4,12 @@ import { useState } from "react";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
 import { LinkParentModal } from "@/components/kids/link-parent-modal";
-import { generateInvitationCode, type LinkedParent } from "@/lib/kids-data";
+import {
+  createPendingParentFromForm,
+  generateInvitationCode,
+  type LinkedParent,
+  type LinkedParentDraft,
+} from "@/lib/kids-data";
 
 function LinkedParentRow({ parent }: { parent: LinkedParent }) {
   return (
@@ -47,6 +52,16 @@ export function LinkParentCard({
     setModalOpen(true);
   };
 
+  const handleSaveParent = (draft: LinkedParentDraft) => {
+    // Next id over the current rows (mock first, then added ones): the first
+    // invited parent matches the spec's "mock max + 1" and ids stay unique.
+    setRows((current) => {
+      const nextId =
+        current.reduce((max, parent) => Math.max(max, parent.id), 0) + 1;
+      return [createPendingParentFromForm(draft, nextId), ...current];
+    });
+  };
+
   return (
     <div className="rounded-2xl border border-line bg-panel px-4.5 py-4">
       <div className="mb-3.5 text-[12.5px] font-extrabold tracking-[0.8px] text-label">
@@ -87,6 +102,7 @@ export function LinkParentCard({
           kidName={kidName}
           invitationCode={invitationCode}
           onClose={() => setModalOpen(false)}
+          onSave={handleSaveParent}
         />
       ) : null}
     </div>

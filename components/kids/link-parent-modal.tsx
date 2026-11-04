@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { INVITATION_RELATIONS } from "@/lib/kids-data";
+import { INVITATION_RELATIONS, type LinkedParentDraft } from "@/lib/kids-data";
 
 const fieldClass =
   "w-full rounded-[14px] border-[1.5px] border-[#EADFD0] bg-white px-4 py-[13px] text-[15px] outline-none placeholder:text-[#B6A99B]";
+
+const REQUIRED_MESSAGE = "Este campo es obligatorio";
+const INVALID_EMAIL_MESSAGE = "Ingresa un email válido";
+// Minimal email shape: something@something.dot (spec: sin @ o sin dominio)
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldError = string | undefined;
+type FieldErrors = { name?: FieldError; email?: FieldError };
 
 function FieldLabel({ htmlFor, className, children }: { htmlFor: string; className?: string; children: string }) {
   return (
@@ -22,6 +30,14 @@ function ChipLabel({ className, children }: { className?: string; children: stri
     <div className={`block text-[12px] font-extrabold tracking-[0.7px] text-[#94887B] ${className ?? ""}`}>
       {children}
     </div>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message: string }) {
+  return (
+    <p id={id} className="mt-1.5 text-[12px] font-bold text-accent-edit">
+      {message}
+    </p>
   );
 }
 
@@ -92,16 +108,19 @@ export function LinkParentModal({
   kidName,
   invitationCode,
   onClose,
+  onSave,
 }: {
   kidName: string;
   invitationCode: string;
   onClose: () => void;
+  onSave: (draft: LinkedParentDraft) => void;
 }) {
   const [draft, setDraft] = useState<{ name: string; email: string; relation: Relation }>({
     name: "",
     email: "",
     relation: INVITATION_RELATIONS[0],
   });
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -119,11 +138,32 @@ export function LinkParentModal({
   const updateDraft = (field: "name" | "email" | "relation") =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setDraft((current) => ({ ...current, [field]: event.target.value }));
+      // Inline errors clear as soon as their field gets a new value
+      if (field === "name" || field === "email") {
+        setErrors((current) =>
+          current[field] === undefined ? current : { ...current, [field]: undefined },
+        );
+      }
     };
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    // Validation and save are wired in step 4.
+    const trimmedEmail = draft.email.trim();
+    const validation: FieldErrors = {
+      name: draft.name.trim() === "" ? REQUIRED_MESSAGE : undefined,
+      email:
+        trimmedEmail === ""
+          ? REQUIRED_MESSAGE
+          : EMAIL_PATTERN.test(trimmedEmail)
+            ? undefined
+            : INVALID_EMAIL_MESSAGE,
+    };
+    if (validation.name ?? validation.email) {
+      setErrors(validation);
+      return;
+    }
+    onSave(draft);
+    onClose();
   };
 
   return (
@@ -174,8 +214,13 @@ export function LinkParentModal({
                 value={draft.name}
                 onChange={updateDraft("name")}
                 placeholder="Ej. Diego Fernández"
+                aria-invalid={errors.name !== undefined}
+                aria-describedby={errors.name !== undefined ? "link-parent-name-error" : undefined}
                 className={`${fieldClass} text-ink`}
               />
+              {errors.name !== undefined && (
+                <FieldError id="link-parent-name-error" message={errors.name} />
+              )}
             </div>
 
             <div className="mb-[18px]">
@@ -186,8 +231,13 @@ export function LinkParentModal({
                 value={draft.email}
                 onChange={updateDraft("email")}
                 placeholder="correo@ejemplo.com"
+                aria-invalid={errors.email !== undefined}
+                aria-describedby={errors.email !== undefined ? "link-parent-email-error" : undefined}
                 className={`${fieldClass} text-ink`}
               />
+              {errors.email !== undefined && (
+                <FieldError id="link-parent-email-error" message={errors.email} />
+              )}
             </div>
 
             <div className="mb-5">
