@@ -26,6 +26,12 @@ export type Kid = {
 
 export const ROOMS = ["Soles", "Lunas", "Estrellas"] as const;
 
+// Parentesco chips of the link-parent modal; "Mamá" is the modal's default
+export const INVITATION_RELATIONS = ["Mamá", "Papá", "Tutor/a"] as const;
+export const INVITATION_CODE_LENGTH = 5;
+// Capitals and digits without ambiguous characters (no O/I/L or 0/1)
+export const INVITATION_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
 // The form filled in the add-kid modal (values as typed, before derivation)
 export type KidDraft = {
   name: string;
@@ -33,6 +39,13 @@ export type KidDraft = {
   room: string;
   allergies: string; // comma-separated tags (e.g. "Maní, Lactosa")
   notes: string;
+};
+
+// The form filled in the link-parent modal (values as typed, before derivation)
+export type LinkedParentDraft = {
+  name: string;
+  email: string;
+  relation: string; // an option of INVITATION_RELATIONS
 };
 
 const AVATAR_COLOR_PALETTE = ["sky", "pink", "green", "yellow", "purple"] as const;
@@ -89,6 +102,34 @@ export function createKidFromForm(draft: KidDraft, nextId: number, now = new Dat
   }
 
   return kid;
+}
+
+// Random invitation code for the link-parent modal; generated on modal open,
+// never during the initial render (random values must not reach the SSR tree).
+export function generateInvitationCode(): string {
+  let code = "";
+  for (let index = 0; index < INVITATION_CODE_LENGTH; index++) {
+    const pick = Math.floor(Math.random() * INVITATION_CODE_ALPHABET.length);
+    code += INVITATION_CODE_ALPHABET.charAt(pick);
+  }
+  return code;
+}
+
+// Derives a pending LinkedParent row from the link-parent modal draft; same
+// shape as the static parents. Odd ids get purple, even ids blue — the mock
+// rows follow the same odd/even pattern.
+export function createPendingParentFromForm(
+  draft: LinkedParentDraft,
+  nextId: number,
+): LinkedParent {
+  return {
+    id: nextId,
+    name: draft.name.trim(),
+    relation: draft.relation,
+    status: "pending",
+    avatarColor: nextId % 2 === 1 ? "purple" : "blue",
+    note: draft.email.trim(),
+  };
 }
 
 export const kids: Kid[] = [
