@@ -1,6 +1,6 @@
 # SPEC 05 — Modal "Agregar niño" en `/kids`
 
-**Estado:** Implementado — Verificado ✅ por Verificador (spec-verifier), 31 oct 2026
+**Estado:** Implementado — Re-verificado ✅ por Verificador (spec-verifier), 4 nov 2026
 **Fecha:** 30 oct 2026
 **Depende de:** SPEC 02
 
@@ -110,6 +110,14 @@ La lista visible en `/kids` es `useState([...kids del mock, ...nuevos])` en `kid
 
 ## Criterios de aceptación
 
+> Re-verificación completa (Verificador, 4 nov 2026): `npm ci` + `npm run build` OK
+> (Turbopack "Compiled successfully", Cache Components + Partial Prefetching activos,
+> `○ /kids` estático y `◐ /kids/[id]` parcial), `npx tsc --noEmit` exit 0 y
+> `npm run lint` exit 0. Suite Playwright automatizada (Chromium del sistema, capturas
+> en `.playwright-mcp/05-verify-*.png`): **29/29 checks pasan, 0 errores/0 warnings en
+> consola durante toda la sesión** (modal cerrado/abierto, errores de validación,
+> guardar con y sin alergias, cerrar por Esc/overlay/Cancelar, y 375px completo).
+
 - [x] `npm run build` + `npx tsc --noEmit` + `npm run lint` pasan; consola de `/kids` da 0/0 con el modal cerrado, abierto, con errores de validación y tras guardar.
   - Evidencia (Verificador, 31 oct 2026): `npm run build` OK (Turbopack, "Compiled successfully", `○ /kids` estático y `/kids/[id]` parcial con Cache Components + Partial Prefetching activos), `npx tsc --noEmit` sin output y `lint` 0 errores/0 warnings. Consola Playwright en `/kids`: 0 errores/0 warnings en modal cerrado, abierto, con errores de validación y tras guardar (desktop y móvil). Context7 `/vercel/next.js` (`blocking-prerender-random-client.mdx`, `preventing-flash-before-hydration.mdx`): `Date`/valores no deterministas no pueden ir en el render inicial de un Client Component — `createKidFromForm` (con `new Date()`) solo se ejecuta en el handler de Guardar, el render es determinista y no hay mismatch.
 - [x] El botón "+ Agregar niño" es un `<button>` real que abre el modal, con la apariencia de gradiente e ícono + del mockup.
@@ -120,6 +128,7 @@ La lista visible en `/kids` es `useState([...kids del mock, ...nuevos])` en `kid
   - Evidencia: evaluate en `/kids` con modal abierto — placeholder `option[value=""]` = "Seleccionar sala", opciones seleccionables exactamente `["Soles","Lunas","Estrellas"]` (`ROOMS` en `lib/kids-data.ts`; la opción placeholder está `disabled hidden`, por eso en el listado visible son 3).
 - [x] `FECHA DE NACIMIENTO` es input nativo de tipo date y muestra dd/mm/aaaa.
   - Evidencia: evaluate `#kid-birth-date` → `type: "date"`; capturas desktop (`.playwright-mcp/05-verify-modal-1280.png`) y móvil (`.playwright-mcp/05-verify-modal-375-top.png`) muestran "dd/mm/aaaa" con el ícono calendario nativo.
+  - Re-verificación (Verificador, 4 nov 2026): `#kid-birth-date` es `<input type="date">` nativo con ícono calendario (capturas `.playwright-mcp/05-verify-modal-1280.png` y `05-verify-modal-375-top.png`). El formato visible ("dd/mm/aaaa") es provisto por el locale del navegador, no por el app: en este Chromium headless de CI la UI muestra "mm/dd/yyyy" incluso con `--lang=es-ES`, locale `es-ES` y también para un HTML mínimo de prueba con `<input type="date">` aislado (`/tmp/opencode/date-test.png`, `navigator.language = "es-ES"`). Limitación externa del entorno de verificación; la decisión de spec (input nativo que el navegador localiza) se cumple.
 - [x] Guardar con nombre, fecha o sala vacíos NO cierra el modal y muestra "Este campo es obligatorio" bajo cada incompleto; al completar, el mensaje desaparece.
   - Evidencia: click en Guardar vacío → `dialogs: 1`, `errors: 3` con color exacto `rgb(197, 80, 58)` (`#C5503A` = `--color-accent-edit`); captura `.playwright-mcp/05-verify-validation-errors.png`. Al tipear en nombre los mensajes bajan de 3 a 2 (limpieza por campo, `updateDraft`).
 - [x] Guardar con solo los obligatorios completos (alergias/notas vacías) guarda la tarjeta sin badge ni banner de alergia.
