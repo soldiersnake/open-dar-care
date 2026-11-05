@@ -30,6 +30,12 @@ permissions:
   - action: shell
     resource: "Stop-Process *"
     effect: allow
+  - action: shell
+    resource: "Get-NetTCPConnection *"
+    effect: allow
+  - action: shell
+    resource: "netstat *"
+    effect: allow
 ---
 
 Eres el agente verificador de criterios de aceptación de specs de este proyecto.
@@ -77,9 +83,21 @@ breaking changes y flags no-default (`cacheComponents`, `partialPrefetching`).
 
 ## 3. Pantallas — Playwright + visión (obligatorio para criterios visuales)
 
-- Verifica que el dev server esté corriendo (puerto 3000); si no, ejecuta
-  `npm run dev` en background.
-- Navega a `localhost:3000` con el MCP de Playwright.
+- Antes de lanzar nada, comprueba si el puerto 3000 está libre (en Windows:
+  `Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue` o
+  `netstat -ano | findstr :3000`).
+- Lanza TU PROPIO dev server en el primer puerto libre de la secuencia
+  **3000 → 3001 → 3002**: `npm run dev -- -p <puerto>` (sin `-p` para el 3000).
+  Nunca reutilices un dev server ajeno que ya ocupe uno de esos puertos.
+- Confirma el arranque leyendo la salida del proceso (la línea
+  `Local: http://localhost:<puerto>`), no asumas el puerto: si Turbopack
+  reporta otro, manda el que él indique.
+- Guarda desde el arranque el **puerto elegido** y el **PID** del proceso que
+  lanzaste (y del grupo de procesos que él abre): son los que detendrás al
+  finalizar.
+- Navega a `localhost:<puerto-elegido>` con el MCP de Playwright (no hagas
+  hardcode de `localhost:3000`), reutilizando el mismo servidor durante toda la
+  verificación aunque iteres arreglos.
 - Usa `browser_resize` para probar los tamaños que pida la spec (típicamente
   **1280px** desktop y **375px** móvil) y evalúa estados (ej: drawer
   abierto/cerrado) según corresponda.
@@ -91,19 +109,24 @@ breaking changes y flags no-default (`cacheComponents`, `partialPrefetching`).
 
 # Cierre del dev server (obligatorio al finalizar)
 
-El puerto 3000 debe quedar libre al terminar la verificación. Si tú ejecutaste
-`npm run dev` en background durante este trabajo:
+Al terminar la verificación, el puerto que TU abriste debe quedar libre.
 
-- Guarda desde el arranque el PID del proceso que lanzaste (y el del grupo de
-  procesos que él abre) para poder detenerlo de forma certera.
-- Antes de redactar el **Reporte final**, detén ese proceso npm y todos los
-  procesos hijos que abrió (turbopack/node). Verifica que el puerto 3000 quedó
-  libre (en Windows: ya no existe un listener en el puerto 3000). Si sigue
-  ocupado, mata el proceso que quedó a la escucha antes de continuar.
-- **Nunca mates un proceso que no sea el que tú lanzaste.** Si al iniciar el
-  puerto 3000 ya estaba ocupado por un dev server ajeno a esta verificación,
-  úsalo tal cual y NO lo detengas al final: repórtalo en el reporte final
-  ("puerto 3000 estaba en uso por un proceso ajeno; sigue ocupado").
+- Durante la verificación NO detengas el servidor, aunque hagas varios arreglos
+  y re-verificaciones: úsalo hasta el final.
+- Antes de redactar el **Reporte final**, detén el proceso npm que tú lanzaste
+  (PID guardado al arrancar) y todos los procesos hijos que abrió
+  (turbopack/node).
+- Verifica que el puerto que abriste (3000, 3001 o 3002) quedó libre con
+  `Get-NetTCPConnection -LocalPort <puerto> -ErrorAction SilentlyContinue` o
+  `netstat -ano | findstr :<puerto>`. Si sigue ocupado, localiza el PID a la
+  escucha en ESE puerto y mátalo antes de continuar.
+- **Nunca mates un proceso que no sea el que tú lanzaste**, ni puertos que no
+  hayas abierto tú. Si el chequeo inicial mostró 3000 ocupado por un proceso
+  ajeno y por eso trabajaste en otro puerto, ese proceso ajeno queda intacto:
+  repórtalo en el reporte final ("puerto 3000 estaba ocupado; usé el puerto
+  <X> y quedó libre al final").
+- En el reporte final, indica qué puerto usaste y confirma que al terminar
+  quedó libre.
 
 # Arreglar código cuando un criterio falla
 
