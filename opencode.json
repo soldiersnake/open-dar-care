@@ -13,11 +13,14 @@
   "bash": "allow"
 },
   "mcp": {
-    "playwright": {
-      "type": "local",
-      "command": ["cmd", "/c", "npx", "-y", "@playwright/mcp@latest"],
-      "enabled": true,
-      "environment": {}
+    "timeout": {
+      "startup": 60000
+    },
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": ["cmd", "/c", "npx", "-y", "@playwright/mcp@0.0.84"]
+      }
     }
   }
 }

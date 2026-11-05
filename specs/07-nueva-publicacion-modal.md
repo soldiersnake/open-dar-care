@@ -1,6 +1,8 @@
 # SPEC 07 — Modal "Nueva publicación" (crear-publicacion)
 
-> **Estado:** Aprobado
+# SPEC 07 — Modal "Nueva publicación" (crear-publicacion)
+
+> **Estado:** Implementado — Verificado ✅ por Verificador (spec-verifier), 5 nov 2026
 > **Depende de:** SPEC 01, SPEC 02
 > **Fecha:** 2026-11-05
 > **Objetivo:** Implementar el modal del mockup `references/pantallas/crear-publicacion.dc.html`, que se abre desde los 3 triggers de "Nueva publicación" (sidebar, drawer móvil y CTA "Compartí un momento…" del feed), con chips multi-selección de niños (con "Toda la sala" como toggle de todos), multi-selección obligatoria de tipo, descripción obligatoria con validación inline, fotos locales opcionales, y al publicar antepone la publicación en el feed (client-side), navega a `/` si hace falta y muestra un toast de éxito.
@@ -55,6 +57,8 @@ components/
     new-post-provider.tsx       → NUEVO ("use client"): context con newPosts, addPost() y
                                     showToast(); permite publicar desde /kids y aterrizar en /
     create-post-modal.tsx       → NUEVO ("use client"): overlay + card + para/tipo/desc/fotos
+    new-post-launcher.tsx       → NUEVO ("use client"): render-prop launcher compartido por
+                                    los 3 triggers; on save → addPost + toast + navigate "/"
     toast.tsx                   → NUEVO ("use client"): Toast fixed bottom-center con variantes
     sidebar.tsx                 → MODIFICADO: NewPostButton pasa a <button> y monta el modal
                                   (sirve para sidebar y drawer con el mismo handler)
@@ -119,19 +123,46 @@ La lista visible en `/` es `[...newPosts del provider, ...posts del mock]`.
 
 ## Criterios de aceptación
 
-- [ ] `npm run build` + `npx tsc --noEmit` + `npm run lint` pasan; consola 0 errores/0 warnings con el modal cerrado, abierto, con errores de validación y tras publicar.
-- [ ] Los 3 triggers (sidebar/desktop, drawer móvil, CTA "Compartí un momento…") son `<button>` reales con `aria-haspopup="dialog"` que abren el modal, con la apariencia intacta.
-- [ ] A 1280px el modal es visualmente fiel a `crear-publicacion.dc.html`: header "Cancelar / Nueva publicación / Publicar", labels eyebrow, estilos de chips/textarea/card y placeholder exactos.
-- [ ] `PARA` muestra los 8 niños del mock + "Toda la sala": multi-selección individual, chip activo con estilo del mockup; "Toda la sala" selecciona todos cuando falta alguno y deselecciona todos cuando están todos.
-- [ ] `TIPO` abre sin ningún chip activo y permite multi-selección (Comida + Logro a la vez, por ejemplo).
-- [ ] Publicar con PARA, TIPO o descripción incompletos NO cierra el modal y muestra los mensajes inline con color `--color-accent-edit`; los mensajes desaparecen al corregir.
-- [ ] FOTOS: "Agregar" abre el file picker y la/s imagen/es elegida/s aparecen como miniatura 96×96 con X para quitar; nada se sube.
-- [ ] Publicar con datos válidos antepone el post en el feed con datos derivados (hora real, badge del primer tipo, recipients según selección, 0 likes/comentarios) y "publicado por vos".
-- [ ] Publicar desde `/kids` cierra el modal, navega a `/` y el post nuevo aparece primero; desde `/` antepone en el sitio.
-- [ ] Publicar muestra un toast bottom-center que solo desaparece a los ~3s (variantes error/warning compilan pero no se disparan por hoy).
-- [ ] "Cancelar", overlay y `Esc` cierran sin publicar; al reabrir el form está vacío.
-- [ ] Recargar el feed vuelve al mock de 3 posts (sin persistencia).
-- [ ] A 375px el modal es usable: card a ancho completo, scroll, publicar y cerrar operativos.
+> Verificación completa (Verificador, 5 nov 2026): `npm run build` OK (Turbopack
+> "Compiled successfully", Cache Components + Partial Prefetching activos, 16/16
+> rutas prerenderizadas con `○ /` estático), `npx tsc --noEmit` exit 0 y
+> `npm run lint` exit 0. Sesión Playwright completa contra el dev server propio
+> (capturas en `.playwright-mcp/07-*.png`): **0 errores / 0 warnings** en consola
+> durante toda la sesión (modal cerrado, abierto, con errores de validación,
+> tras publicar — desktop y móvil). Context7 `/vercel/next.js`:
+> `io.mdx` ("Non-deterministic values") — `new Date()` corre en el handler de
+> Publicar dentro del navegador, contexto en el que la regla de prerender no
+> aplica ("In every other context (… the browser …) it resolves immediately");
+> `05-server-and-client-components.mdx` ("Context providers") — montar el
+> provider client envolviendo `{children}` desde un server layout es el patrón
+> oficial que sigue `NewPostProvider` en `app/(app)/layout.tsx`.
+
+- [x] `npm run build` + `npx tsc --noEmit` + `npm run lint` pasan; consola 0 errores/0 warnings con el modal cerrado, abierto, con errores de validación y tras publicar.
+  - Evidencia (Verificador, 5 nov 2026): build OK (16/16, `○ /` estático con Cache Components + Partial Prefetching), tsc/lint sin output; auditoría Playwright de consola en la sesión completa (`browser_console_messages` error/warning = 0 y 0, solo logs de DevTools).
+- [x] Los 3 triggers (sidebar/desktop, drawer móvil, CTA "Compartí un momento…") son `<button>` reales con `aria-haspopup="dialog"` que abren el modal, con la apariencia intacta.
+  - Evidencia: evaluate — sidebar `BUTTON` + `aria-haspopup="dialog"` + `linear-gradient` intacto; drawer a 375px `BUTTON` + `dialog` y abre; CTA `BUTTON` + `dialog`, abre post-flush y `Esc` cierra (`components/shared/sidebar.tsx`, `feed-screen.tsx` → `NewPostLauncher`).
+- [x] A 1280px el modal es visualmente fiel a `crear-publicacion.dc.html`: header "Cancelar / Nueva publicación / Publicar", labels eyebrow, estilos de chips/textarea/card y placeholder exactos.
+  - Evidencia: comparación por visión de `.playwright-mcp/07-modal-1280.png` vs `.playwright-mcp/07-mockup-crear-publicacion-1280.png` (mockup servido por HTTP en :8899) — card `#FBF4EC`/`#ECE0D0`/r24, header con "Publicar" `#D9583C`, labels eyebrow 12px tracking, chips PARA con avatares pastel + dark chip activo idéntico al de "Mateo" del mockup, 7 TIPOs con la paleta exacta, placeholder "Contá cómo le fue hoy…". Diferencias únicas = decisiones de spec (overlay del modal real, sin default, 8 niños en vez de 3, sin foto precargada).
+- [x] `PARA` muestra los 8 niños del mock + "Toda la sala": multi-selección individual, chip activo con estilo del mockup; "Toda la sala" selecciona todos cuando falta alguno y deselecciona todos cuando están todos.
+  - Evidencia: evaluate — chips activos `border-color rgb(63,54,46)`/bg `#3F362E` al elegir; "Toda la sala" 1er click → 8 niños activos y chip activo (captura `.playwright-mcp/07-modal-375-fixed.png`); 2do click → 0 seleccionados; publicó "familias de N niños" correspondiente.
+- [x] `TIPO` abre sin ningún chip activo y permite multi-selección (Comida + Logro a la vez, por ejemplo).
+  - Evidencia: formulario fresco con Comida/Logro/Anuncio neutros al abrir; tras clicks Comida `#9A7B1E` + Logro `#CFEBD8/#3E9B6C` activos en simultáneo y Siesta sigue neutra (`TYPE_STYLES` en `create-post-modal.tsx`).
+- [x] Publicar con PARA, TIPO o descripción incompletos NO cierra el modal y muestra los mensajes inline con color `--color-accent-edit`; los mensajes desaparecen al corregir.
+  - Evidencia: submit vacío → modal sigue abierto; al corregir los mensajes desaparecen por campo (la publicación válida pasa directamente); captura `.playwright-mcp/07-validation.png`; color de mensajes `rgb(197, 80, 58)` = `--color-accent-edit`.
+- [x] FOTOS: "Agregar" abre el file picker y la/s imagen/es elegida/s aparecen como miniatura 96×96 con X para quitar; nada se sube.
+  - Evidencia: `browser_file_upload` → 1 miniatura (96×96) con botón `aria-label^="Quitar"`; remove → 0 thumbs y tile "Agregar" vuelve; `URL.createObjectURL` local (sin red) con revoke al quitar/desmontar.
+- [x] Publicar con datos válidos antepone el post en el feed con datos derivados (hora real, badge del primer tipo, recipients según selección, 0 likes/comentarios) y "publicado por vos".
+  - Evidencia: caption "Anuncio general · 15:55 · publicado por vos · ACTIVIDAD · toda la sala · 0" y "familias de 2 niños" (captura `.playwright-mcp/07-post-2-kids-toast.png`) — `createPostFromForm` con `TYPE_TO_CATEGORY` sobre el primer tipo, `formatTime` solo en el handler.
+- [x] Publicar desde `/kids` cierra el modal, navega a `/` y el post nuevo aparece primero; desde `/` antepone en el sitio.
+  - Evidencia: publicar con "Sofía Méndez" + Actividad desde `/kids` → URL pasa a `/`, modal cerrado y primera card "Sofía Méndez · familia de Sofía Méndez"; desde `/` antepone en el lugar (`NewPostLauncher.handlePublish` con `router.push("/")`).
+- [x] Publicar muestra un toast bottom-center que solo desaparece a los ~3s (variantes error/warning compilan pero no se disparan por hoy).
+  - Evidencia: tras publicar, toast `fixed bottom-24px left-1/2 "Publicación creada"` (captura `.playwright-mcp/07-post-2-kids-toast.png`) y `browser_wait_for(textGone)` lo confirma desaparecido dentro de 3,5s (`setTimeout(onClose, 3000)`); variantes error/warning con checkstyle en `components/shared/toast.tsx` y llaman `showToast(msg, "error"|"warning")` sin disparos hoy.
+- [x] "Cancelar", overlay y `Esc` cierran sin publicar; al reabrir el form está vacío.
+  - Evidencia: los tres cierran el modal y las cards permanecen en 3; al reabrir (tras Esc) el form llega limpio: tipos inactivos, 0 niños, textarea vacía, 0 errores.
+- [x] Recargar el feed vuelve al mock de 3 posts (sin persistencia).
+  - Evidencia: tras publicaciones de la sesión (Sofía + verificación "familias de 2 niños"), `browser_navigate` a `/` → exactamente 3 cards (mock de SPEC 01).
+- [x] A 375px el modal es usable: card a ancho completo, scroll, publicar y cerrar operativos.
+  - Evidencia: card ≤333px (viewport 375 − padding 16 − scrollbar) y scrolleable con publicar/Esc funcionales (capturas `.playwright-mcp/07-modal-375-top.png` y `07-modal-375-fixed.png`); fix aplicado durante la verificación — el drawer usa CSS transform que crea un containing block para overlays `fixed`, el modal ahora se monta vía `createPortal(→ document.body)` en `new-post-launcher.tsx` y el overlay vuelve a ancho completo (antes 279px).
 
 ## Decisiones tomadas y descartadas
 
@@ -143,6 +174,7 @@ La lista visible en `/` es `[...newPosts del provider, ...posts del mock]`.
 - **Navegación a `/` al publicar desde otra página**: el estado de publicaciones vive en un provider client del layout; sin él, el post publicado desde `/kids` se perdería al volver al feed (el re-render reparte desde el mock).
 - **Badge del post = primer tipo seleccionado** (orden del mockup, confirmado el mapeo): reutiliza las 3 categorías visuales existentes de SPEC 01 sin diseñar cards nuevas.
 - **Validación inline custom** (confirmado) vs HTML5 nativo: mismo tratamiento de SPEC 05/06.
+- **Implementación: el modal se monta vía `createPortal` a `document.body`** (Verificador, 5 nov 2026): el drawer móvil anima con CSS transform y una transform crea un *containing block* para overlays `fixed`; sin portal, abrir desde el drawer recortaba el modal al ancho del drawer (279px a 375px). El launcher centraliza el portal y sirve igual a los 3 triggers.
 - **Fotos: file picker local + quitar** (confirmado), sin upload ni feed que muestre la imagen (caption con contador).
 - **Descartado: persistencia localStorage** para los posts: primer estado persistente del proyecto; spec propia si algún día se necesita.
 - **Descartado: disparar toast error/warning en esta spec**: no existe hoy un flujo que los necesite; la API queda lista.

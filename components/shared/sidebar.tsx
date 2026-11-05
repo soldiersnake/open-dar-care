@@ -4,6 +4,7 @@ import { useState, type JSX } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems, mockUser, type NavItem } from "@/lib/feed-data";
+import { NewPostLauncher } from "@/components/shared/new-post-launcher";
 
 const navIconGlyphs: Record<NavItem["icon"], JSX.Element> = {
   feed: (
@@ -60,12 +61,13 @@ function Logo({ className }: { className?: string }) {
   );
 }
 
-function NewPostButton({ onClick }: { onClick?: () => void }) {
+function NewPostButton({ onClick }: { onClick: () => void }) {
   return (
-    <a
-      href="#"
+    <button
+      type="button"
+      aria-haspopup="dialog"
       onClick={onClick}
-      className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(180deg,#F4977E,#EE8164)] px-3 py-3 text-[14.5px] font-extrabold text-white shadow-[0_8px_18px_-8px_rgba(238,129,100,0.75)]"
+      className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(180deg,#F4977E,#EE8164)] px-3 py-3 text-[14.5px] font-extrabold text-white shadow-[0_8px_18px_-8px_rgba(238,129,100,0.75)]"
     >
       <svg
         width="17"
@@ -80,7 +82,7 @@ function NewPostButton({ onClick }: { onClick?: () => void }) {
         <path d="M12 5v14M5 12h14" />
       </svg>
       Nueva publicación
-    </a>
+    </button>
   );
 }
 
@@ -165,7 +167,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <Logo />
       <div className="mb-4">
-        <NewPostButton onClick={onNavigate} />
+        <NewPostLauncher>
+          {(open) => <NewPostButton onClick={open} />}
+        </NewPostLauncher>
       </div>
       <NavList onNavigate={onNavigate} />
       <UserBlock />
