@@ -27,6 +27,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Playwright: screenshots or anything Playwright-related must go in the `.playwright-mcp` folder.
 - Context7: use it to fetch up-to-date framework docs instead of guessing from training data.
+- Supabase (MCP remoto, conectado vía OAuth en `mcp.supabase.com`, configurado en `opencode.json`): base de datos real del proyecto (tabla por tabla: inspect antes de modificar, SQL corre en el servidor del proyecto). Para/debug: leer logs y advisories (security/performance/health) antes de cambiar nada. Reglas: nunca leer archivos del servidor ni ejecutar comandos de OS vía SQL; aplicar cambios de schema con cuidado porque van directo al proyecto remoto (ver skill `supabase-postgres-best-practices` antes de tocar Postgres).
+
+## Skills de Supabase (instaladas en `.agents/skills/`)
+
+Estas son skills de autoinvocación (se cargan solas cuando la tarea aplica; el agente debe invocarlas con la herramienta `skill`):
+
+- `supabase` (`.agents/skills/supabase/SKILL.md`): usar en CUALQUIER tarea que involucre Supabase. Triggers: productos de Supabase (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); clientes `supabase-js` / `@supabase/ssr` en Next.js/React; problemas de auth (login, logout, sessions, JWT, cookies, RLS); Supabase CLI o MCP; cambios de schema, migraciones, auditorías de seguridad, debug de errores HTTP/Postgres/RLS/schemacache/timeouts, y lectura de logs (Logs Explorer).
+- `supabase-postgres-best-practices` (`.agents/skills/supabase-postgres-best-practices/SKILL.md`): mejores prácticas de Postgres. Cargar SIEMPRE ANTES de escribir o cambiar algo que viva en Postgres: tablas y columnas, tipos, diseño de schema, migraciones, RLS y sus tests, índices, triggers, funciones, queues (pg_cron/pgmq), pgvector, restaurar dumps; también para diagnosticar queries lentas, CPU alta, timeouts, locking, bloat o filas visibles al tenant equivocado. Aplica incluso para un cambio de una sola columna.
 
 ## Spec Driven Development - Skills
 
