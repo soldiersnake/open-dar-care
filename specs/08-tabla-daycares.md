@@ -1,6 +1,6 @@
 # SPEC 08 — Tabla `daycares` + patrón de migraciones (Supabase)
 
-> **Estado:** Implementado
+> **Estado:** Implementado — Verificado ✅ por Verificador (spec-verifier), 7 nov 2026
 > **Depende de:** ninguna
 > **Fecha:** 2026-11-07
 > **Objetivo:** Crear la primera tabla del esquema, `daycares`, en el proyecto remoto de Supabase usando el patrón de migraciones versionadas en `supabase/migrations/` aplicadas vía Supabase MCP, con RLS habilitado y 4 registros de prueba.
@@ -65,13 +65,20 @@ Precondición a validar en el paso 2: confirmar vía MCP (`list_migrations` / qu
 
 ## Criterios de aceptación
 
-- [ ] Existe `supabase/migrations/0001_create_daycares.sql` y su contenido coincide con el modelo de datos de esta spec.
-- [ ] Existe `supabase/migrations/0002_seed_daycares.sql` con exactamente 4 INSERT.
-- [ ] En el proyecto remoto, `information_schema.columns` muestra `daycares` con columnas `id` (uuid, PK), `name` (text NOT NULL) y `created_at` (timestamptz, default now()).
-- [ ] RLS habilitado en `daycares` y sin policies de RLS todavía.
-- [ ] `select count(*) from public.daycares` devuelve 4.
-- [ ] El historial de migraciones del remoto (`list_migrations`) contiene las versiones `0001` y `0002`.
-- [ ] Ningún archivo de la app fue modificado.
+- [x] Existe `supabase/migrations/0001_create_daycares.sql` y su contenido coincide con el modelo de datos de esta spec.
+  - ✅ Verificado (7 nov 2026): leído en disco — DDL idéntico al bloque "Modelo de datos" (`create table` 3 columnas + comments + `enable row level security`). Commit `650ca79`.
+- [x] Existe `supabase/migrations/0002_seed_daycares.sql` con exactamente 4 INSERT.
+  - ✅ Verificado (7 nov 2026): leído en disco — 1 statement con 4 tuplas, nombres idénticos al bloque seed de la spec. Commit `650ca79`.
+- [x] En el proyecto remoto, `information_schema.columns` muestra `daycares` con columnas `id` (uuid, PK), `name` (text NOT NULL) y `created_at` (timestamptz, default now()).
+  - ✅ Verificado (7 nov 2026): query remota via Supabase MCP — `id` uuid default `gen_random_uuid()`, `name` text NOT NULL, `created_at` timestamp with time zone default `now()`; constraint `daycares_pkey` PRIMARY KEY presente.
+- [x] RLS habilitado en `daycares` y sin policies de RLS todavía.
+  - ✅ Verificado (7 nov 2026): `pg_class.relrowsecurity = true` y `pg_policies` count = 0.
+- [x] `select count(*) from public.daycares` devuelve 4.
+  - ✅ Verificado (7 nov 2026): `total = 4`, con `Guardería Sala Soles | Guardería Pequeños Pasos | Guardería Rayito de Sol | Guardería Colibrí`.
+- [x] El historial de migraciones del remoto (`list_migrations`) contiene las versiones `0001` y `0002`.
+  - ✅ Verificado (7 nov 2026): `0001_create_daycares` y `0002_seed_daycares` en el historial (junto a 2 migraciones de prueba previas del proyecto, que no tocan `daycares`).
+- [x] Ningún archivo de la app fue modificado.
+  - ✅ Verificado (7 nov 2026): `git diff --stat 306f9d1..HEAD` = solo `specs/08-tabla-daycares.md` + 2 archivos de `supabase/migrations/`; working tree limpio.
 
 ## Decisiones
 
