@@ -136,20 +136,34 @@ Tras cada migración aplicada el remoto queda consistente; el commit se hace des
 
 ## Criterios de aceptación
 
-- [ ] `npm run build`, `npx tsc --noEmit` y `npm run lint` pasan sin errores.
-- [ ] Existe `supabase/migrations/0007_create_rooms.sql` y su contenido coincide con el modelo de datos de esta spec (4 columnas, FK → `daycares`, RLS, comments).
-- [ ] En el remoto, `rooms` tiene exactamente las 4 columnas del modelo de datos y `pg_class.relrowsecurity = true` con `pg_policies` count = 0.
-- [ ] En el remoto, `rooms` tiene exactamente 3 filas, todas en la daycare `Guardería Sala Soles`, llamadas `Soles`, `Lunas` y `Estrellas`.
-- [ ] En el remoto, `pg_type` muestra `public.child_status` con valores `active`/`archived`.
-- [ ] Existe `supabase/migrations/0009_create_children.sql` y su contenido coincide con el modelo de datos (11 columnas, FK → `rooms`, trigger `set_updated_at`, RLS, comments).
-- [ ] En el remoto, `children` tiene exactamente 11 columnas y ningún null en `room_id`/`full_name`/`birth_date`/`enrolled_at` es posible (constraints NOT NULL presentes).
-- [ ] Un UPDATE sobre una fila de `children` refresca `updated_at` automáticamente (trigger `set_updated_at`).
-- [ ] El historial de migraciones del remoto (`list_migrations`) contiene las versiones `0007`, `0008` y `0009`.
-- [ ] Existe `utils/supabase/admin.ts` con service role client (`persistSession: false`, `server-only`) y no expone la clave en archivos commiteados.
-- [ ] `actions/children.ts` exporta `createChild(state, formData)`: sin sesión rechaza; con `full_name`/`birth_date`/`room_id` vacíos o inválidos devuelve `ok: false` sin insertar; un `room_id` de otra daycare devuelve error de sala, sin insertar.
-- [ ] El POST persiste fiel al esquema: `allergy_tags` en minúsculas inglés sin duplicados, `enrolled_at` = hoy cuando falta, `medical_notes` vacío → `null`, `photo_consent` = `true` cuando falta, `status` = `'active'` siempre.
-- [ ] Ejecutar `node --env-file=.env scripts/verify-0009-children-post.mjs` termina OK: crea el niño de prueba, verifica fila (sala `Soles`, nombre, fechas, tags) y lo elimina; al final `children` = 0 filas y `rooms` = 3.
-- [ ] Ningún archivo de UI cambia: `add-kid-modal.tsx`, `kids-screen.tsx`, `lib/kids-data.ts` y `/kids` siguen exactamente como SPEC 05 los dejó.
+- [x] `npm run build`, `npx tsc --noEmit` y `npm run lint` pasan sin errores.
+  ✅ Verificado (9 nov 2026): `npm run lint` sin errores; `npx tsc --noEmit` sin salida; `npm run build` OK (Next.js 16.4.2, 16/16 páginas, Cache Components + Partial Prefetching activos).
+- [x] Existe `supabase/migrations/0007_create_rooms.sql` y su contenido coincide con el modelo de datos de esta spec (4 columnas, FK → `daycares`, RLS, comments).
+  ✅ Verificado (9 nov 2026): el archivo contiene `create table public.rooms` con id/daycare_id/name/created_at (default now()), `references public.daycares (id)`, `enable row level security` y `COMMENT ON TABLE/COLUMN` en español — igual al bloque SQL de la spec.
+- [x] En el remoto, `rooms` tiene exactamente las 4 columnas del modelo de datos y `pg_class.relrowsecurity = true` con `pg_policies` count = 0.
+  ✅ Verificado (9 nov 2026): `information_schema.columns` (execute_sql MCP) lista exactamente 4 columnas (id uuid PK, daycare_id uuid NOT NULL, name text NOT NULL, created_at timestamptz NOT NULL default now()); `pg_class.relrowsecurity = true` para rooms y children; `pg_policies` devuelve 0 filas para ambas tablas.
+- [x] En el remoto, `rooms` tiene exactamente 3 filas, todas en la daycare `Guardería Sala Soles`, llamadas `Soles`, `Lunas` y `Estrellas`.
+  ✅ Verificado (9 nov 2026): SELECT con JOIN a daycares devuelve 3 filas (Estrellas, Lunas, Soles) todas con `daycare_name = 'Guardería Sala Soles'`.
+- [x] En el remoto, `pg_type` muestra `public.child_status` con valores `active`/`archived`.
+  ✅ Verificado (9 nov 2026): pg_type/pg_enum devuelve `child_status` con labels `{active,archived}` en schema public.
+- [x] Existe `supabase/migrations/0009_create_children.sql` y su contenido coincide con el modelo de datos (11 columnas, FK → `rooms`, trigger `set_updated_at`, RLS, comments).
+  ✅ Verificado (9 nov 2026): el archivo contiene `create type public.child_status`, las 11 columnas del bloque SQL de la spec, FK `references public.rooms (id)`, trigger `before update ... execute function public.set_updated_at()` (reuso de 0004, sin recrearla), `enable row level security` y comments en español.
+- [x] En el remoto, `children` tiene exactamente 11 columnas y ningún null en `room_id`/`full_name`/`birth_date`/`enrolled_at` es posible (constraints NOT NULL presentes).
+  ✅ Verificado (9 nov 2026): `information_schema.columns` lista exactamente 11 columnas con los tipos de la spec; `is_nullable = NO` en room_id, full_name, birth_date y enrolled_at; FK `FOREIGN KEY (room_id) REFERENCES rooms(id)` confirmada en pg_constraint.
+- [x] Un UPDATE sobre una fila de `children` refresca `updated_at` automáticamente (trigger `set_updated_at`).
+  ✅ Verificado (9 nov 2026): fila temporal de prueba insertada vía execute_sql (updated_at `23:18:46.981`), tras UPDATE devolvió updated_at `23:19:45.068` (trigger `set_children_updated_at` presente en information_schema.triggers, `EXECUTE FUNCTION set_updated_at()`); fila eliminada al terminar (children = 0). El script de verificación también confirma el trigger ("✔ trigger set_updated_at (updated_at cambió)").
+- [x] El historial de migraciones del remoto (`list_migrations`) contiene las versiones `0007`, `0008` y `0009`.
+  ✅ Verificado (9 nov 2026): `list_migrations` MCP lista `0007_create_rooms`, `0008_seed_rooms` y `0009_create_children` aplicadas al remoto (además de 0001–0006 de specs previas).
+- [x] Existe `utils/supabase/admin.ts` con service role client (`persistSession: false`, `server-only`) y no expone la clave en archivos commiteados.
+  ✅ Verificado (9 nov 2026): `utils/supabase/admin.ts` tiene `import "server-only"`, `persistSession: false` y lee `SUPABASE_SERVICE_ROLE_KEY`; `git check-ignore .env` confirma que no está trackeado y `git ls-files` no contiene ninguna clave (solo `.env.example` con el placeholder `sb_secret_XXXX…`); patrón avalado por docs Next.js (Data Access Layer con `import 'server-only'`, Query: "How to restrict code to server-only", Context7 /vercel/next.js).
+- [x] `actions/children.ts` exporta `createChild(state, formData)`: sin sesión rechaza; con `full_name`/`birth_date`/`room_id` vacíos o inválidos devuelve `ok: false` sin insertar; un `room_id` de otra daycare devuelve error de sala, sin insertar.
+  ✅ Verificado (9 nov 2026): revisión de código — check de sesión con `getClaims()` devuelve "{ok:false,error:'Sin sesión activa.'}" sin llegar al insert; validación de `full_name` no vacío, `birth_date` ISO válida ≤ hoy (rechaza desbordes tipo 2026-02-31), `enrolled_at` ISO, `room_id` uuid, sala existente y perteneciente a la daycare del perfil (leído con admin client) antes del insert — todos devuelven `ok:false` con error en español y cortan antes de insertar. Patrón `'use server'` + auth-antes-de-mutar según docs Next.js (Query: Server Actions con 'use server', Context7 /vercel/next.js).
+- [x] El POST persiste fiel al esquema: `allergy_tags` en minúsculas inglés sin duplicados, `enrolled_at` = hoy cuando falta, `medical_notes` vacío → `null`, `photo_consent` = `true` cuando falta, `status` = `'active'` siempre.
+  ✅ Verificado (9 nov 2026): el script de verificación comprobó sobre la fila persistida: status 'active', enrolled_at = hoy, medical_notes null, allergy_tags ["lactose","peanut"] (de entrada ["Lactose","peanut ","peanut"] — trim/lowercase/dedupe) y photo_consent true; en código, defaults "cuando falta" (enrolled_at → hoy, photo_consent → true, medical_notes vacío → null, tags vacías → null) en actions/children.ts.
+- [x] Ejecutar `node --env-file=.env scripts/verify-0009-children-post.mjs` termina OK: crea el niño de prueba, verifica fila (sala `Soles`, nombre, fechas, tags) y lo elimina; al final `children` = 0 filas y `rooms` = 3.
+  ✅ Verificado (9 nov 2026): re-ejecutado en esta verificación — 12/12 checks "Resultado: OK" ("Sala Soles OK (daycare: Guardería Sala Soles)… ✔ status/room_id/full_name/birth_date/enrolled_at/medical_notes/allergy_tags/photo_consent… ✔ trigger… ✔ niño de prueba eliminado… ✔ children = 0 (esperado 0)… ✔ rooms = 3 (esperado 3)").
+- [x] Ningún archivo de UI cambia: `add-kid-modal.tsx`, `kids-screen.tsx`, `lib/kids-data.ts` y `/kids` siguen exactamente como SPEC 05 los dejó.
+  ✅ Verificado (9 nov 2026): `git status --porcelain` solo muestra `.env.example`, `package.json`, `package-lock.json` (modificados — server-only instalado y doc de variable) y los archivos nuevos de esta spec (migraciones 0007–0009, `utils/supabase/admin.ts`, `actions/children.ts`, `scripts/`); ningún archivo de UI aparece modificado.
 
 ## Decisiones
 
