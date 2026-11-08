@@ -40,6 +40,7 @@ Estas son skills de autoinvocación (se cargan solas cuando la tarea aplica; el 
 
 - /spec Usaremos esta habilidad para crear las especificaciones.
 - /spec-impl Usaremos esta skill para hacer las implementaciones.
+- **Ubicación de las specs:** si el entregable principal del spec es la base de datos (tablas, migraciones, RLS, políticas, funciones SQL, triggers, seed) se guarda en `specs/database/NN-slug.md`; el resto (UI, componentes, estilos, flujos, config) va en la raíz `specs/NN-slug.md`. La numeración `NN` es global y continua entre ambas ubicaciones (se cuenta mirando las dos carpetas a la vez).
 - Ubicación: `.agents/skills/spec/SKILL.md` y `.agents/skills/spec-impl/SKILL.md` (IDs exactos: `spec`, `spec-impl`).
 - **Cómo se invocan:** escribiendo `/spec …` o `/spec-impl …` (se resuelven vía los wrappers en `.opencode/commands/`), o `@spec` / `@spec-impl` en el prompt.
 - **Regla obligatoria para el agente:** ante cualquier mención de `/spec` o `/spec-impl`, cargar SIEMPRE el skill correspondiente con la herramienta `skill` (IDs exactos: `spec`, `spec-impl`) y seguir sus fases al pie de la letra. Nunca improvisar el flujo ni mezclar las etapas. Estas skills NO aparecen en la lista de autoinvocación (`disable-model-invocation: true`); se cargan solo bajo demanda explícita del usuario.

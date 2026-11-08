@@ -13,8 +13,8 @@ allowed-tools: Read, Glob, Grep, Write, AskUserQuestion, Bash(ls:*), Bash(cat:*)
 Today's date (use this for the spec header, never guess it):
 !`date +%F`
 
-Specs that already exist:
-!`ls specs/ 2>/dev/null || echo "The specs/ folder does not exist yet"`
+Specs that already exist (root and database subfolder):
+!`ls -R specs/ 2>/dev/null || echo "The specs/ folder does not exist yet"`
 
 ---
 
@@ -110,13 +110,14 @@ In both cases the content follows the same order:
 
 When the content is ready (either because you had everything, or because all sections were confirmed):
 
-1. Determine the next sequential number from the `specs/` listing in the session context. Take the highest existing number and add one, zero-padded to two digits. If the last one is `02-powerups.md`, this one will be `03-`. If `specs/` is empty or missing, start at `01-`.
-2. Generate a short kebab-case slug from the objective (e.g. `levels-and-highscores`). See **Arguments** below for when `$ARGUMENTS` is the slug instead.
-3. Use the date from the session context above for the `**Date:**` field. **Never write a date you did not read from there.**
-4. Write the file directly at `specs/NN-slug.md` with all the sections. **Do not ask for permission to write it and do not ask whether the file name works** — announce the path in the final confirmation. Only ask if the target file already exists.
-5. Mark the state as `Draft` by default (or the equivalent word used by the existing specs in this repo). **Do not mark it as `Approved` automatically** — the user does that once they have re-read it.
-6. If the header lists dependencies (`**Depends on:** SPEC 01`), check that each referenced spec actually exists in `specs/`. If one does not, say so instead of writing a dangling reference.
-7. **Seed the config file if it does not exist.** Check for `specs/.spec-config.yml`. If it is **missing**, create it with the default content below. If it **already exists, leave it untouched** — never overwrite the user's settings.
+1. **Classify the spec before choosing a path.** If the spec's **main deliverable is the database** — creating or altering tables, columns, types, RLS, policies, SQL functions, triggers, versioned migrations, or seed data in Supabase/Postgres — it is a **database spec** and lives at `specs/database/NN-slug.md`. Any other spec (UI screens, components, styles, flows, config) is a **general spec** and lives at `specs/NN-slug.md` (the root). A UI feature that merely reads from or inserts into existing tables stays general. Database specs have `specs/database/*.md` as their precedent: `08-tabla-daycares.md`, `09-tabla-usuarios.md`.
+2. Determine the next sequential number from the `specs/` listing in the session context. The numbering is **global and continuous across both locations**: take the highest existing number found in `specs/` root and `specs/database/` combined, add one, and zero-pad to two digits — no matter where the new spec will live. E.g. if the highest is `07-` in the root and `09-` in `specs/database/`, the next one is `10-`. If `specs/` is empty or missing, start at `01-`.
+3. Generate a short kebab-case slug from the objective (e.g. `levels-and-highscores`). See **Arguments** below for when `$ARGUMENTS` is the slug instead.
+4. Use the date from the session context above for the `**Date:**` field. **Never write a date you did not read from there.**
+5. Write the file directly at the path chosen in step 1 (`specs/NN-slug.md` or `specs/database/NN-slug.md`) with all the sections. **Do not ask for permission to write it and do not ask whether the file name works** — announce the path in the final confirmation. Only ask if the target file already exists.
+6. Mark the state as `Draft` by default (or the equivalent word used by the existing specs in this repo). **Do not mark it as `Approved` automatically** — the user does that once they have re-read it.
+7. If the header lists dependencies (`**Depends on:** SPEC 01`), check that each referenced spec actually exists in `specs/` or `specs/database/`. If one does not, say so instead of writing a dangling reference.
+8. **Seed the config file if it does not exist.** Check for `specs/.spec-config.yml`. If it is **missing**, create it with the default content below. If it **already exists, leave it untouched** — never overwrite the user's settings.
 
    ```yaml
    # spec workflow configuration
@@ -127,7 +128,7 @@ When the content is ready (either because you had everything, or because all sec
    AutoCreateBranch: true
    ```
 
-8. Confirm to the user:
+9. Confirm to the user:
    - Path of the created file.
    - Reminder: the spec is in `Draft` state. Change it to `Approved` once you have re-read it.
    - If you just created `specs/.spec-config.yml`, mention it exists and that `AutoCreateBranch` defaults to `true` (set it to `false` to control branch creation yourself).
