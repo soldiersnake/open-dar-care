@@ -2,6 +2,9 @@
 -- trigger creates the matching profile in public.users).
 -- Test credentials: staff@opendaycare.test / DayCare2026! (persisted hashed, never in plain text)
 -- The daycare id is resolved by name inside the same statement (daycare ids are gen_random_uuid()).
+-- The flow-token columns (email_change*, reauthentication_token, phone_change_token, etc.)
+-- are set to '' because normal Auth flows never leave them NULL: GoTrue requires
+-- non-NULL strings there and returns 500 unexpected_failure when loading a row with NULLs.
 
 insert into auth.users (
   instance_id,
@@ -16,7 +19,12 @@ insert into auth.users (
   created_at,
   updated_at,
   confirmation_token,
-  recovery_token
+  recovery_token,
+  email_change,
+  email_change_token_new,
+  email_change_token_current,
+  reauthentication_token,
+  phone_change_token
 )
 select
   '00000000-0000-0000-0000-000000000000',
@@ -34,6 +42,11 @@ select
   ),
   now (),
   now (),
+  '',
+  '',
+  '',
+  '',
+  '',
   '',
   ''
 from public.daycares d

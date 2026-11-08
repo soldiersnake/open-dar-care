@@ -1,10 +1,29 @@
 "use client";
 
 import { useState, type JSX } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navItems, mockUser, type NavItem } from "@/lib/feed-data";
+import { navItems, type NavItem } from "@/lib/feed-data";
+import { signOut } from "@/actions/auth";
 import { NewPostLauncher } from "@/components/shared/new-post-launcher";
+import type { SessionUserProfile } from "@/utils/supabase/dal";
+
+const ROLE_LABELS: Record<SessionUserProfile["role"], string> = {
+  staff: "Personal",
+  parent: "Familia",
+  admin: "Administración",
+};
+
+// The mock subtitle used the room name ("Maestra · Soles"); the real
+// data shows the daycare name without its "Guardería " prefix.
+function daycareLabel(daycareName: string) {
+  return daycareName.replace(/^Guardería /, "").trim();
+}
+
+function userSubtitle(user: SessionUserProfile) {
+  return [ROLE_LABELS[user.role] ?? user.role, daycareLabel(user.daycareName)]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 const navIconGlyphs: Record<NavItem["icon"], JSX.Element> = {
   feed: (
@@ -128,41 +147,61 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function UserBlock() {
+function UserBlock({ user }: { user: SessionUserProfile }) {
+  const initial = (user.fullName.trim().charAt(0) || "?").toUpperCase();
+  const subtitle = userSubtitle(user);
   return (
     <div className="mt-2.5 border-t border-line pt-3.5">
       <div className="flex items-center gap-3 px-2 py-1.5">
-        <div className="flex h-9.5 w-9.5 flex-none items-center justify-center rounded-full bg-brand-warm font-display text-base font-semibold text-white">
-          {mockUser.initials}
-        </div>
+        {user.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- remote avatar hosts are per-daycare, no fixed remotePattern
+          <img
+            src={user.avatarUrl}
+            alt={user.fullName}
+            className="h-9.5 w-9.5 flex-none rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-9.5 w-9.5 flex-none items-center justify-center rounded-full bg-brand-warm font-display text-base font-semibold text-white">
+            {initial}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-extrabold text-ink">{mockUser.name}</div>
-          <div className="text-xs text-muted">{mockUser.role}</div>
+          <div className="truncate text-sm font-extrabold text-ink">{user.fullName}</div>
+          <div className="truncate text-xs text-muted">{subtitle}</div>
         </div>
-        <Link
-          href="/login"
-          title="Cerrar sesión"
-          className="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-bg text-muted-soft"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <form action={signOut}>
+          <button
+            type="submit"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+            className="flex h-8 w-8 flex-none items-center justify-center rounded-[10px] bg-bg text-muted-soft"
           >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-          </svg>
-        </Link>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+            </svg>
+          </button>
+        </form>
       </div>
     </div>
   );
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({
+  onNavigate,
+  user,
+}: {
+  onNavigate?: () => void;
+  user: SessionUserProfile;
+}) {
   return (
     <>
       <Logo />
@@ -172,12 +211,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </NewPostLauncher>
       </div>
       <NavList onNavigate={onNavigate} />
-      <UserBlock />
+      <UserBlock user={user} />
     </>
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: SessionUserProfile }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const closeDrawer = () => setDrawerOpen(false);
@@ -185,7 +224,7 @@ export function Sidebar() {
   return (
     <>
       <aside className="sticky top-0 hidden h-screen w-62 flex-none flex-col border-r border-line bg-panel px-4 py-6 md:flex">
-        <SidebarContent />
+        <SidebarContent user={user} />
       </aside>
 
       <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between border-b border-line bg-panel px-5 md:hidden">
@@ -222,7 +261,7 @@ export function Sidebar() {
           drawerOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <SidebarContent onNavigate={closeDrawer} />
+        <SidebarContent user={user} onNavigate={closeDrawer} />
       </div>
     </>
   );
