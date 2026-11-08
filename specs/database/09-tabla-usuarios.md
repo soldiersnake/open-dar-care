@@ -1,6 +1,6 @@
 # SPEC 09 — Tabla `users` + enums `user_role` / `user_status` (Supabase)
 
-> **Estado:** Aprobado
+> **Estado:** Implementado — Verificado ✅ por Verificador (spec-verifier), 7 nov 2026
 > **Depende de:** SPEC 08 (tabla `daycares` creada y con 4 registros de prueba)
 > **Fecha:** 2026-11-07
 > **Objetivo:** Crear la tabla `users` y sus enums `user_role` / `user_status` en el proyecto remoto de Supabase con el patrón de migraciones versionadas, incluyendo el trigger de sincronización con Supabase Auth y un usuario staff de prueba vinculado a una guardería existente, de modo que 1 usuario pertenece a 1 daycare vía `users.daycare_id` y un daycare tiene N usuarios.
@@ -127,17 +127,28 @@ Cada paso con DDL aplicado deja el remoto en un estado consistente; el commit se
 
 ## Criterios de aceptación
 
-- [ ] Existe `supabase/migrations/0003_create_user_enums.sql` y su contenido coincide con el modelo de datos de esta spec.
-- [ ] En el remoto, `pg_type` muestra `public.user_role` con valores `staff/parent/admin` y `public.user_status` con `pending/active`.
-- [ ] Existe `supabase/migrations/0004_create_users.sql` y su contenido coincide con el modelo de datos de esta spec.
-- [ ] En el remoto, `information_schema.columns` muestra `users` con exactamente 10 columnas: `id` (uuid PK, FK→`auth.users` CASCADE), `daycare_id` (uuid NOT NULL, FK→`daycares`), `role` (user_role NOT NULL), `status` (user_status NOT NULL default `active`), `full_name` (text NOT NULL), `avatar_url` (text nullable), `notify_on_post` y `daily_summary_enabled` (boolean NOT NULL default true), `created_at` y `updated_at` (timestamptz NOT NULL default now()).
-- [ ] RLS habilitado en `users` y sin policies de RLS todavía (`pg_policies` count = 0).
-- [ ] Un UPDATE sobre una fila de `users` refresca `updated_at` automáticamente (trigger `set_updated_at`).
-- [ ] El trigger `on_auth_user_created` existe sobre `auth.users` y apunta a la función `handle_new_user()` (SECURITY DEFINER).
-- [ ] Existe `supabase/migrations/0005_seed_staff_user.sql` con 1 INSERT en `auth.users`.
-- [ ] En el remoto, `auth.users` tiene la fila de `staff@opendaycare.test` con email confirmado, y `public.users` tiene su perfil creado por el trigger con `role = 'staff'`, `status = 'active'`, `full_name = 'Ana Martínez'` y `daycare_id` = el de `Guardería Sala Soles`.
-- [ ] El historial de migraciones del remoto (`list_migrations`) contiene las versiones `0003`, `0004` y `0005`.
-- [ ] Ningún archivo de la app fue modificado (el diff queda limitado a `specs/09-tabla-usuarios.md` + los 3 archivos de `supabase/migrations/`).
+- [x] Existe `supabase/migrations/0003_create_user_enums.sql` y su contenido coincide con el modelo de datos de esta spec.
+  - ✅ Verificado (7 nov 2026): leído en disco — 2 `create type` (`user_role`: staff/parent/admin; `user_status`: pending/active) + `COMMENT ON TYPE` en español, idéntico al modelo de datos. Archivo sin commitear aún (`git status`: `?? supabase/migrations/0003_create_user_enums.sql`).
+- [x] En el remoto, `pg_type` muestra `public.user_role` con valores `staff/parent/admin` y `public.user_status` con `pending/active`.
+  - ✅ Verificado (7 nov 2026): query `pg_type`/`pg_enum` vía Supabase MCP — `user_role` → `staff,parent,admin`; `user_status` → `pending,active`.
+- [x] Existe `supabase/migrations/0004_create_users.sql` y su contenido coincide con el modelo de datos de esta spec.
+  - ✅ Verificado (7 nov 2026): leído en disco — tabla (10 columnas), `enable row level security`, `set_updated_at()` + trigger `before update`, `handle_new_user()` SECURITY DEFINER + `on_auth_user_created` sobre `auth.users`, `COMMENT ON TABLE/COLUMN` en español; idéntico al bloque SQL de la spec.
+- [x] En el remoto, `information_schema.columns` muestra `users` con exactamente 10 columnas: `id` (uuid PK, FK→`auth.users` CASCADE), `daycare_id` (uuid NOT NULL, FK→`daycares`), `role` (user_role NOT NULL), `status` (user_status NOT NULL default `active`), `full_name` (text NOT NULL), `avatar_url` (text nullable), `notify_on_post` y `daily_summary_enabled` (boolean NOT NULL default true), `created_at` y `updated_at` (timestamptz NOT NULL default now()).
+  - ✅ Verificado (7 nov 2026): `information_schema.columns` vía MCP enumera exactamente esas 10 columnas con tipos/nullability/defaults exactos; `pg_constraint` confirma `users_pkey`, `users_id_fkey` → `auth.users` (`confdeltype='c'` = CASCADE) y `users_daycare_id_fkey` → `daycares` (`'a'` = NO ACTION).
+- [x] RLS habilitado en `users` y sin policies de RLS todavía (`pg_policies` count = 0).
+  - ✅ Verificado (7 nov 2026): `pg_class.relrowsecurity = true` y `pg_policies` count = 0 para `public.users`. Advisor `rls_enabled_no_policy` (INFO) lo reporta tal cual: es la decisión de la spec (policies diferidas).
+- [x] Un UPDATE sobre una fila de `users` refresca `updated_at` automáticamente (trigger `set_updated_at`).
+  - ✅ Verificado (7 nov 2026): UPDATE en una sola sentencia (CTE prev/update) sobre el perfil staff — `updated_at` pasó de `22:44:45.431522+00` a `22:45:57.170353+00` (`touched = true`).
+- [x] El trigger `on_auth_user_created` existe sobre `auth.users` y apunta a la función `handle_new_user()` (SECURITY DEFINER).
+  - ✅ Verificado (7 nov 2026): `pg_trigger`/`pg_proc` — `on_auth_user_created` sobre `auth.users` → `handle_new_user` (`prosecdef = true`, `search_path=public`).
+- [x] Existe `supabase/migrations/0005_seed_staff_user.sql` con 1 INSERT en `auth.users`.
+  - ✅ Verificado (7 nov 2026): leído en disco — 1 statement `insert into auth.users (...)` con `crypt(..., gen_salt('bf', 10))`, email confirmado y lookup del `daycare_id` por nombre (`Guardería Sala Soles`).
+- [x] En el remoto, `auth.users` tiene la fila de `staff@opendaycare.test` con email confirmado, y `public.users` tiene su perfil creado por el trigger con `role = 'staff'`, `status = 'active'`, `full_name = 'Ana Martínez'` y `daycare_id` = el de `Guardería Sala Soles`.
+  - ✅ Verificado (7 nov 2026): `auth.users` → id `ceb06f24-dbf1-40db-bb20-0d3d440d6430`, `email_confirmed = true`; `public.users` → fila con el mismo `id`, `role='staff'`, `status='active'`, `full_name='Ana Martínez'`, `daycare_name='Guardería Sala Soles'`. El perfil lo generó el trigger (la migración no inserta en `users`).
+- [x] El historial de migraciones del remoto (`list_migrations`) contiene las versiones `0003`, `0004` y `0005`.
+  - ✅ Verificado (7 nov 2026): `20261107224202`→`0003_create_user_enums`, `20261107224326`→`0004_create_users`, `20261107224440`→`0005_seed_staff_user` en el historial (junto a las 4 previas, que no tocan `users`).
+- [x] Ningún archivo de la app fue modificado (el diff queda limitado a `specs/09-tabla-usuarios.md` + los 3 archivos de `supabase/migrations/`).
+  - ✅ Verificado (7 nov 2026): `git status --short` en la rama `spec-09-tabla-usuarios` = solo los 3 archivos `??` de `supabase/migrations/`; `git diff HEAD` vacío. Nota: la spec vive en `specs/database/` (movida a subcarpeta, commiteada en `spec-08-tabla-daycares` con commit `e4d46f3` antes de crear esta rama; ninguna modificación de app/).
 
 ## Decisiones
 
