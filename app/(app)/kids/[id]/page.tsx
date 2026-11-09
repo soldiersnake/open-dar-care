@@ -5,7 +5,13 @@ import { Avatar } from "@/components/shared/avatar";
 import { InfoList } from "@/components/shared/info-list";
 import { LinkParentCard } from "@/components/kids/link-parent-card";
 import { KidsLoading } from "@/components/kids/kids-loading";
-import { kidFromDbRow, type DbChildRow, type Kid } from "@/lib/kids-data";
+import {
+  getKidById,
+  kidFromDbRow,
+  type DbChildRow,
+  type Kid,
+} from "@/lib/kids-data";
+import { isMockEnv } from "@/lib/dev-environment";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const UUID_PATTERN =
@@ -225,6 +231,49 @@ async function KidProfile({
   );
 }
 
+// Mock environment profile (SPEC 14): numeric mock ids (1–8) resolve the
+// example profiles; uuids and unknown ids → default not-found. `?fail=1`
+// has no effect here — there is no DB connection in the first place.
+async function MockKidProfile({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  const kidId = Number(id);
+  if (!Number.isInteger(kidId)) {
+    notFound();
+  }
+
+  const kid = getKidById(kidId);
+  if (!kid) {
+    notFound();
+  }
+
+  const bannerLines = [kid.allergiesNote, kid.medicalNotes].filter(
+    (line): line is string => line !== undefined,
+  );
+
+  return (
+    <div className="flex flex-wrap items-start gap-6.5">
+      <div className="flex min-w-75 flex-1 flex-col gap-4.5">
+        <Hero kid={kid} />
+        <AllergyBanner lines={bannerLines} />
+        <InfoList
+          items={[
+            { label: "Fecha de nacimiento", value: kid.birthDate },
+            { label: "Sala", value: kid.room },
+            { label: "Ingreso", value: kid.entryDate },
+          ]}
+        />
+      </div>
+
+      <div className="flex w-75 flex-none flex-col gap-3.5">
+        <DaySummaryButton />
+        {/* Mock parents (SPEC 06 example rows) + the always-available button. */}
+        <LinkParentCard parents={kid.parents} kidName={kid.name} />
+      </div>
+    </div>
+  );
+}
+
 // Inner section: resolves id + fail flag at request time inside the
 // Suspense boundary (cacheComponents keeps the route fully dynamic).
 async function KidProfileSection({
@@ -248,6 +297,21 @@ export default function KidProfilePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ fail?: string }>;
 }) {
+  if (isMockEnv()) {
+    // Mock environment (SPEC 14): numeric mock profiles only, no DB reads.
+    // Validation and visuals stay identical to SPEC 13.
+    return (
+      <div className="mx-auto w-full max-w-205 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
+        <BackLink />
+
+        <Suspense fallback={<KidsLoading label="Cargando niño…" />}>
+          <MockKidProfile params={params} />
+        </Suspense>
+      </div>
+    );
+  }
+
+  // Real environment (SPEC 13): uuid → database read; everything else 404.
   return (
     <div className="mx-auto w-full max-w-205 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
       <BackLink />

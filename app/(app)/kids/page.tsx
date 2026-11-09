@@ -2,8 +2,11 @@ import { KidsScreen } from "@/components/kids/kids-screen";
 import { KidsLoading } from "@/components/kids/kids-loading";
 import {
   kidFromDbRow,
+  kids as mockKids,
+  ROOMS,
   type RoomOption,
 } from "@/lib/kids-data";
+import { isMockEnv } from "@/lib/dev-environment";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { Suspense } from "react";
 
@@ -76,6 +79,18 @@ export default function KidsPage({
 }: {
   searchParams: Promise<{ fail?: string }>;
 }) {
+  if (isMockEnv()) {
+    // Mock environment (SPEC 14): static render of the example data — no DB
+    // reads, no data Suspense needed, and `?fail=1` is irrelevant here.
+    return (
+      <KidsScreen
+        kids={mockKids}
+        rooms={ROOMS.map((name): RoomOption => ({ id: "", name }))}
+        mockMode
+      />
+    );
+  }
+
   // The spinner is the Suspense fallback: the DB read streams in behind it.
   return (
     <Suspense fallback={<KidsLoading />}>
