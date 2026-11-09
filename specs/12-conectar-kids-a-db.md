@@ -27,7 +27,7 @@
 - **`components/kids/add-kid-modal.tsx`** (MODIFICADO):
   - El select SALA se puebla con las opciones reales (id+nombre) que llegan del server (las 3 salas seed Soles/Lunas/Estrellas coinciden con las del mock de SPEC 05).
   - Submit: la validación inline de obligatorios de SPEC 05 se mantiene igual (no se invoca la action si quedan vacíos); al pasar, llama `createChild(null, formData)` (SPEC 11) con el `formData` de los 5 campos.
-  - `ok: true` → cierra el modal, `showToast("{Nombre} agregado a la sala {Sala}", "success")` (ej. "Nina Gómez agregada a la sala Soles") y `router.refresh()` para que el server re-lea la DB y la lista muestre al niño (única fuente de verdad, sin anteponer en client).
+  - `ok: true` → cierra el modal, `showToast("El niño/a {Nombre} agregado a la sala {Sala}", "success")` (literal acordado en la verificación del paso 5) y `router.refresh()` para que el server re-lea la DB y la lista muestre al niño (única fuente de verdad, sin anteponer en client).
   - `ok: false` → `showToast({error de la action}, "error")` (ej. "La sala no pertenece a tu guardería") y el modal **queda abierto** con los datos intactos para reintentar.
   - El botón "Guardar" se deshabilita mientras la action está en vuelo (evita dobles INSERTs y toasts duplicados).
 - **`components/kids/kid-card.tsx` / `kid-list.tsx`** (MODIFICADOS):
@@ -85,20 +85,34 @@ Tras cada paso el proyecto queda compilable y funcional; el commit se hace despu
 
 ## Criterios de aceptación
 
-- [ ] `npm run build`, `npx tsc --noEmit` y `npm run lint` pasan sin errores.
-- [ ] Existe `components/shared/toast-provider.tsx` con `ToastProvider` + `useToast()`; el feed sigue mostrando "Publicación creada" sin cambios en `new-post-launcher.tsx` (visual de la alerta idéntico).
-- [ ] Con conexión OK, `/kids` muestra los niños reales de la tabla `children`: insertar 2 niños de prueba vía MCP → aparecen con nombre/edad/sala/ingreso derivados correctos; al terminar se eliminan y `/kids` muestra el estado vacío.
-- [ ] Al cargar `/kids` aparece el spinner "Cargando niños…" como fallback del Suspense; consola 0/0 y build OK con `cacheComponents`.
-- [ ] Con `children` en 0 filas, `/kids` muestra la caja centrada "No hay niños agregados…"; con 1 niño → grid normal sin caja.
-- [ ] Con `?fail=1` (solo desarrollo): `/kids` muestra las 8 del mock + toast variante `error` "Fallo de conexión al cargar los niños."; en producción la condición dev no tiene ningún efecto.
-- [ ] El modal abre con las opciones SALA = las 3 salas reales (Soles/Lunas/Estrellas) y la visual del mockup de SPEC 05 intacta (labels, placeholder "Seleccionar sala", chevron).
-- [ ] "Guardar" con obligatorios completos dispara el POST real: toast success con el texto "{Nombre} agregado a la sala {Sala}", el modal se cierra y tras el `router.refresh()` la lista muestra al niño creado (iniciales, edad desde `birth_date`, fecha de ingreso = hoy).
-- [ ] El niño creado persiste: recargar `/kids` lo mantiene y existe en el remoto (verificar fila por MCP con el `childId`).
-- [ ] Click en la tarjeta de un niño de DB no navega (cursor default, sin 404); las mock siguen navegando a `/kids/[id]` 1–8.
-- [ ] Guardar con algún obligatorio vacío NO invoca la action y muestra el inline "Este campo es obligatorio" de SPEC 05 (no hay insert nuevo en el remoto).
-- [ ] Error del POST (`ok:false`): toast variante `error` con el mensaje exacto de la action (ej. "La sala no pertenece a tu guardería"), el modal queda abierto con los datos intactos y `count(children)` no cambia.
-- [ ] Mientras la action está en vuelo, "Guardar" está deshabilitado (sin dobles inserts ni toasts duplicados).
-- [ ] Ningún archivo de DB cambia (sin migraciones nuevas) y `utils/supabase/admin.ts` / `actions/children.ts` quedan intactos (el modal los llama, no los modifica).
+- [x] `npm run build`, `npx tsc --noEmit` y `npm run lint` pasan sin errores.
+  ✅ Verificado (9 nov 2026): lint exit 0, `tsc --noEmit` exit 0, `next build` OK — `✓ Compiled successfully`, `/kids` en ƒ (dinámica) y `/kids/[id]` con paths 1–8, con `cacheComponents`/`partialPrefetching` activos.
+- [x] Existe `components/shared/toast-provider.tsx` con `ToastProvider` + `useToast()`; el feed sigue mostrando "Publicación creada" sin cambios en `new-post-launcher.tsx` (visual de la alerta idéntico).
+  ✅ Verificado (9 nov 2026): `toast-provider.tsx` implementa ToastProvider/useToast sobre `Toast`; `new-post-launcher.tsx` sin cambios en el diff de git y delegación vía `useNewPostContext().showToast` en `new-post-provider.tsx`; E2E feed: publish → `status "Publicación creada"` (`.playwright-mcp/12-feed-toast-regression.png`, consola 0/0).
+- [x] Con conexión OK, `/kids` muestra los niños reales de la tabla `children`: insertar 2 niños de prueba vía MCP → aparecen con nombre/edad/sala/ingreso derivados correctos; al terminar se eliminan y `/kids` muestra el estado vacío.
+  ✅ Verificado (9 nov 2026): INSERT MCP de 2 filas (Alegria Rios 2023-05-02/peanut → "3 años" + badge MANÍ en SALA SOLES; Bruno Paz 2024-09-18 → "2 años" en SALA LUNAS) visible en E2E (`.playwright-mcp/12-kids-search-filter-1280.png`); buscador filtra al escribir "Alegria". Nota: la fecha de ingreso no se renderiza en el card (el mockup de /kids no la incluye; solo perfil) — derivación `kidFromDbRow` verificada por código + fila MCP. Al eliminarlas via MCP: estado vacío de nuevo (`.playwright-mcp/12-kids-empty-state-1280.png`). Interpretación aplicada y registrada: la lectura filtra `.eq("status","active")` (borrado lógico de `child_status`), coherente con "niños actuales"; anotado para el usuario.
+- [x] Al cargar `/kids` aparece el spinner "Cargando niños…" como fallback del Suspense; consola 0/0 y build OK con `cacheComponents`.
+  ✅ Verificado (9 nov 2026): captura del fallback renderizado (`.playwright-mcp/12-fail1-mock-toast.png` con spinner + "Cargando niños…"); SSR por streaming contiene "Cargando niños…" + `animate-spin` en el shell y el contenido real en el stream posterior (curl con cookie de sesión); Playwright consola 0 errores/0 warnings en cada página verificada; build OK.
+- [x] Con `children` en 0 filas, `/kids` muestra la caja centrada "No hay niños agregados…"; con 1 niño → grid normal sin caja.
+  ✅ Verificado (9 nov 2026): children=0 (via MCP) → caja "No hay niños agregados" + subtexto (`.playwright-mcp/12-kids-empty-state-1280.png`); tras el POST de Nina → grid "SALA SOLES · 1 niño" sin caja (`.playwright-mcp/12-post-nina-toast-list.png`).
+- [x] Con `?fail=1` (solo desarrollo): `/kids` muestra las 8 del mock + toast variante `error` "Fallo de conexión al cargar los niños."; en producción la condición dev no tiene ningún efecto.
+  ✅ Verificado (9 nov 2026): E2E `?fail=1` → 8 links mock + toast de error capturado (HTML con icono rojo `#C5503A`/`#FBD8CC`, variante error; `.playwright-mcp/12-fail1-toast-error.png`, paridad con `ninos2.png`). Producción: la condición está gateada por `process.env.NODE_ENV === "development"` en `app/(app)/kids/page.tsx` (NODE_ENV = "production" en `next build`/`next start`, con el flag al lado derecho del `&&`), por lo que `?fail=1` no tiene efecto fuera de dev.
+- [x] El modal abre con las opciones SALA = las 3 salas reales (Soles/Lunas/Estrellas) y la visual del mockup de SPEC 05 intacta (labels, placeholder "Seleccionar sala", chevron).
+  ✅ Verificado (9 nov 2026): snapshot del dialog con combobox SALA = option Soles/Lunas/Estrellas (uuids reales via server) + placeholder "Seleccionar sala"; captura desktop idéntica al mockup `agregar-nino.dc.html` (`.playwright-mcp/12-modal-open-1280.png`) y móvil 375px (`.playwright-mcp/12-modal-375.png`).
+- [x] "Guardar" con obligatorios completos dispara el POST real: toast success con el texto literal "El niño/a {Nombre} agregado a la sala {Sala}" (ej. "El niño/a Nina Gómez agregado a la sala Soles"), el modal se cierra y tras el `router.refresh()` la lista muestra al niño creado (iniciales, edad desde `birth_date`, fecha de ingreso = hoy).
+  ✅ Verificado (9 nov 2026): E2E con Nina Gómez (2022-03-12, Soles, "Maní, Lactosa") → toast literal exacto capturado con Playwright (`waitFor` sobre "El niño/a Nina Gómez agregado a la sala Soles"), modal cerrado (`dialogStillOpen:false`) y lista tras `router.refresh()` = "N · Nina Gómez · 4 años · sin padres vinculados · MANÍ" (`.playwright-mcp/12-post-nina-toast-list.png`); ingreso = 2026-11-09 (hoy) verificado en la fila MCP (el card no lo muestra — ver nota del criterio 2). Context7 `/vercel/next.js` (`use-router.mdx`): router.refresh() "re-fetching data requests, and re-rendering Server Components" sin perder estado client.
+- [x] El niño creado persiste: recargar `/kids` lo mantiene y existe en el remoto (verificar fila por MCP con el `childId`).
+  ✅ Verificado (9 nov 2026): recarga de `/kids` mantiene a Nina; fila en remoto con childId `dbf3c931-cd32-4f36-b971-f7eb093d9461`: full_name "Nina Gómez", birth_date 2022-03-12, room_id de Soles, allergy_tags ["peanut","lactose"] (traducción español→inglés del modal), medical_notes null, photo_consent true, status 'active'.
+- [x] Click en la tarjeta de un niño de DB no navega (cursor default, sin 404); las mock siguen navegando a `/kids/[id]` 1–8.
+  ✅ Verificado (9 nov 2026): click en la tarjeta de Nina → URL sigue en `/kids`, card es `div` con `cursor: default` (sin observed 404); `?fail=1` → click en Mateo Fernández mock navega a `/kids/3` (route `/kids/[id]` prerender para 1–8 según build).
+- [x] Guardar con algún obligatorio vacío NO invoca la action y muestra el inline "Este campo es obligatorio" de SPEC 05 (no hay insert nuevo en el remoto).
+  ✅ Verificado (9 nov 2026): click en Guardar con los 3 obligatorios vacíos → mensajes inline "Este campo es obligatorio" en nombre/fecha/sala + `aria-invalid` (`.playwright-mcp/12-modal-required-errors.png`, 375px en `.playwright-mcp/12-modal-required-375.png`); `count(children)` sin cambio (0 en ese momento).
+- [x] Error del POST (`ok:false`): toast variante `error` con el mensaje exacto de la action (ej. "La sala no pertenece a tu guardería"), el modal queda abierto con los datos intactos y `count(children)` no cambia.
+  ✅ Verificado (9 nov 2026): reproducible E2E vía `?fail=1` (salas mock con id="" → la action rechaza con "Selecciona una sala válida."): toast error capturado, modal queda ABIERTO con datos intactos (nombre "Error Test", 12/03/2022, Soles; `.playwright-mcp/12-post-error-modal-open.png`) y `count(children)` sin cambio (remoto solo con Nina). Lectura de código en `add-kid-modal.tsx` (rama `else`: no onClose, no router.refresh, showToast(result.error,"error")) y mensajes exactos en `actions/children.ts` ("La sala no pertenece a tu guardería." entre ellos).
+- [x] Mientras la action está en vuelo, "Guardar" está deshabilitado (sin dobles inserts ni toasts duplicados).
+  ✅ Verificado (9 nov 2026): polling del atributo disabled durante el POST de Nina: `disabled=true` en 10/11 muestras (60ms→450ms tras el click) y después solo el toast success; un único INSERT en remoto (children solo con Nina).
+- [x] Ningún archivo de DB cambia (sin migraciones nuevas) y `utils/supabase/admin.ts` / `actions/children.ts` quedan intactos (el modal los llama, no los modifica).
+  ✅ Verificado (9 nov 2026): `git status` sin migraciones nuevas y sin cambios en `admin.ts`/`actions/children.ts`/`new-post-launcher.tsx` (solo consumidos). Los inserts/deletes de niños de prueba se hicieron VIA MCP (datos, no schema).
 
 ## Decisiones
 
@@ -116,6 +130,8 @@ Tras cada paso el proyecto queda compilable y funcional; el commit se hace despu
 - **Sí:** flag `?fail=1` dev-only para verificar la desconexión. Sin él, el camino de fallo no era reproducible en el stack de verificación; gateado con `NODE_ENV=development`.
 - **Sí:** la validación inline de obligatorios de SPEC 05 se mantiene client-side; la action solo se invoca tras pasarla. Los errores de la action van al toast `error` (decisión del usuario), no a inline.
 - **Sí:** toast de éxito contextual: "{Nombre} agregado a la sala {Sala}" (decisión del usuario).
+- **Sí:** literal del toast de éxito "El niño/a {Nombre} agregado a la sala {Sala}" (decisión del usuario al cerrar el paso 5: indistinto de género, sin funciones de heurística).
+- **Sí:** el modal traduce las etiquetas conocidas de alergia español→inglés (maní→peanut, lactosa→lactosa…) antes de llamar `createChild` (decisión del usuario al cerrar el paso 5): respeta el contrato de SPEC 11 ("lo persistido va en inglés") manteniendo el placeholder español del mockup; las desconocidas pasan en minúscula.
 - **No:** policies de RLS ni cambios en `admin.ts`/`actions/children.ts` en esta spec; la UI las llama tal cual (SPEC 11).
 
 ## Riesgos

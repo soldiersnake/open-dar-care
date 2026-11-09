@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Toast, type ToastVariant } from "@/components/shared/toast";
+import { ToastProvider, useToast } from "@/components/shared/toast-provider";
 import {
   createPostFromForm,
   posts as mockPosts,
@@ -15,16 +15,10 @@ import {
   type PostDraft,
 } from "@/lib/feed-data";
 
-type ActiveToast = {
-  key: number; // remounts the Toast so consecutive messages restart the 3s timer
-  variant: ToastVariant;
-  message: string;
-};
-
 type NewPostContextValue = {
   newPosts: Post[]; // newest first; the feed prepends them to the mock
   addPost: (draft: PostDraft) => void;
-  showToast: (message: string, variant?: ToastVariant) => void;
+  showToast: (message: string, variant?: "success" | "error" | "warning") => void;
 };
 
 const NewPostContext = createContext<NewPostContextValue | null>(null);
@@ -37,20 +31,10 @@ export function useNewPostContext(): NewPostContextValue {
   return value;
 }
 
-export function NewPostProvider({ children }: { children: ReactNode }) {
+// Owns the post state and consumes the generic toast (delegation).
+function NewPostState({ children }: { children: ReactNode }) {
   const [newPosts, setNewPosts] = useState<Post[]>([]);
-  const [toast, setToast] = useState<ActiveToast | null>(null);
-
-  const showToast = useCallback(
-    (message: string, variant: ToastVariant = "success") => {
-      setToast((current) => ({
-        key: (current?.key ?? 0) + 1,
-        variant,
-        message,
-      }));
-    },
-    [],
-  );
+  const { showToast } = useToast();
 
   const addPost = useCallback((draft: PostDraft) => {
     setNewPosts((current) => [
@@ -62,14 +46,14 @@ export function NewPostProvider({ children }: { children: ReactNode }) {
   return (
     <NewPostContext.Provider value={{ newPosts, addPost, showToast }}>
       {children}
-      {toast && (
-        <Toast
-          key={toast.key}
-          variant={toast.variant}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
     </NewPostContext.Provider>
+  );
+}
+
+export function NewPostProvider({ children }: { children: ReactNode }) {
+  return (
+    <ToastProvider>
+      <NewPostState>{children}</NewPostState>
+    </ToastProvider>
   );
 }
