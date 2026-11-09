@@ -4,9 +4,12 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/shared/avatar";
 import { InfoList } from "@/components/shared/info-list";
 import { LinkParentCard } from "@/components/kids/link-parent-card";
-import { getKidById } from "@/lib/kids-data";
-import type { Kid } from "@/lib/kids-data";
-import { kids } from "@/lib/kids-data";
+import { KidsLoading } from "@/components/kids/kids-loading";
+import { kidFromDbRow, type DbChildRow, type Kid } from "@/lib/kids-data";
+import { createAdminClient } from "@/utils/supabase/admin";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function BackLink() {
   return (
@@ -43,6 +46,7 @@ function Hero({ kid }: { kid: Kid }) {
           {kid.age} años · Sala {kid.room}
         </p>
       </div>
+      {/* Inert until the edit-kid spec lands (SPEC 13 decision) */}
       <a
         href="#"
         className="rounded-[12px] border-[1.5px] border-line bg-panel px-4 py-2.25 text-[14px] font-bold text-ink-body"
@@ -53,7 +57,11 @@ function Hero({ kid }: { kid: Kid }) {
   );
 }
 
-function AllergyBanner({ note }: { note: string }) {
+// Lines 1..n: translated allergy note first, medical notes second (SPEC 13:
+// tags + notes together). No data at all → no banner.
+function AllergyBanner({ lines }: { lines: string[] }) {
+  if (lines.length === 0) return null;
+
   return (
     <div className="flex gap-3.5 rounded-2xl bg-allergy-bg px-4.5 py-4">
       <div className="flex h-10 w-10 flex-none items-center justify-center rounded-[11px] bg-allergy-icon">
@@ -75,9 +83,16 @@ function AllergyBanner({ note }: { note: string }) {
         <div className="mb-0.5 text-[15px] font-extrabold text-allergy-title">
           Alergias y notas
         </div>
-        <div className="text-[14.5px] leading-[1.5] text-allergy-text">
-          {note}
-        </div>
+        {lines.map((line, index) => (
+          <div
+            key={index}
+            className={`whitespace-normal text-[14.5px] leading-[1.5] text-allergy-text ${
+              index > 0 ? "mt-1.5" : ""
+            }`}
+          >
+            {line}
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -107,25 +122,90 @@ function DaySummaryButton() {
   );
 }
 
-// With cacheComponents, all known mock ids are prerendered at build time;
-// unknown ids fall back to request-time rendering and hit notFound().
-export function generateStaticParams() {
-  return kids.map((kid) => ({ id: String(kid.id) }));
+// In-page error state for a failed profile read (reproducible with `?fail=1`
+// in dev): no crash, no redirect — a centered box and the way back.
+function ProfileUnavailable() {
+  return (
+    <div className="rounded-[18px] border border-line bg-panel py-16 text-center">
+      <p className="m-0 font-display text-[18px] font-semibold text-ink">
+        Perfil no disponible
+      </p>
+      <p className="m-0 mt-1.5 text-[14px] text-muted">
+        No pudimos leer el perfil del niño. Reintenta en unos segundos.
+      </p>
+      <Link
+        href="/kids"
+        className="mt-5 inline-flex items-center justify-center rounded-[12px] border-[1.5px] border-line bg-panel px-4 py-2.25 text-[14px] font-bold text-ink-body"
+      >
+        Volver a Niños
+      </Link>
+    </div>
+  );
 }
 
-async function KidProfile({ id }: { id: string }) {
-  const kidId = Number(id);
-  const kid = getKidById(kidId);
-
-  if (!Number.isInteger(kidId) || !kid) {
+async function KidProfile({
+  id,
+  forcedFailure,
+}: {
+  id: string;
+  forcedFailure: boolean;
+}) {
+  // Real mode only: a valid uuid that exists as an active child. Numeric mock
+  // ids, unknown or malformed ids → default not-found (mock profiles live in
+  // the dev:mock environment, SPEC 14).
+  if (!UUID_PATTERN.test(id)) {
     notFound();
   }
+
+  let kid: Kid | null = null;
+  let medicalNotes: string | null = null;
+  // A dev-forced failure (`?fail=1`) takes the same in-page error path as a
+  // real read failure: no DB hit, "Perfil no disponible" box (SPEC 13).
+  let readFailed = forcedFailure;
+
+  if (!forcedFailure) {
+    try {
+      const admin = createAdminClient();
+      const { data, error } = await admin
+        .from("children")
+        .select(
+          "id, full_name, birth_date, enrolled_at, allergy_tags, medical_notes, status, rooms ( name )",
+        )
+        .eq("id", id)
+        .eq("status", "active")
+        .maybeSingle<DbChildRow>();
+
+      if (error) {
+        throw error;
+      }
+      if (data) {
+        kid = kidFromDbRow(data);
+        medicalNotes = kid.medicalNotes ?? null;
+      }
+    } catch (error) {
+      console.error("kid profile: remote read failed", error);
+      readFailed = true;
+    }
+  }
+
+  if (readFailed) {
+    return <ProfileUnavailable />;
+  }
+
+  if (!kid) {
+    // Unknown uuid (or archived child with the logical delete).
+    notFound();
+  }
+
+  const bannerLines = [kid.allergiesNote, medicalNotes].filter(
+    (line): line is string => line !== undefined && line !== null,
+  );
 
   return (
     <div className="flex flex-wrap items-start gap-6.5">
       <div className="flex min-w-75 flex-1 flex-col gap-4.5">
         <Hero kid={kid} />
-        {kid.allergiesNote && <AllergyBanner note={kid.allergiesNote} />}
+        <AllergyBanner lines={bannerLines} />
         <InfoList
           items={[
             { label: "Fecha de nacimiento", value: kid.birthDate },
@@ -137,25 +217,43 @@ async function KidProfile({ id }: { id: string }) {
 
       <div className="flex w-75 flex-none flex-col gap-3.5">
         <DaySummaryButton />
-        <LinkParentCard parents={kid.parents} kidName={kid.name} />
+        {/* SPEC 06 block stays client-mock: parents arrive later via
+            parent_children/invitations; the button is always available. */}
+        <LinkParentCard parents={[]} kidName={kid.name} />
       </div>
     </div>
   );
 }
 
-export default function KidProfilePage({
+// Inner section: resolves id + fail flag at request time inside the
+// Suspense boundary (cacheComponents keeps the route fully dynamic).
+async function KidProfileSection({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ fail?: string }>;
+}) {
+  const [{ id }, { fail }] = await Promise.all([params, searchParams]);
+  const forcedFailure =
+    process.env.NODE_ENV === "development" && fail === "1";
+
+  return <KidProfile id={id} forcedFailure={forcedFailure} />;
+}
+
+export default function KidProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ fail?: string }>;
 }) {
   return (
     <div className="mx-auto w-full max-w-205 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
       <BackLink />
 
-      <Suspense fallback={null}>
-        {params.then(({ id }) => (
-          <KidProfile id={id} />
-        ))}
+      <Suspense fallback={<KidsLoading label="Cargando niño…" />}>
+        <KidProfileSection params={params} searchParams={searchParams} />
       </Suspense>
     </div>
   );

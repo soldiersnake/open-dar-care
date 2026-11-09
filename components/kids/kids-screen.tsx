@@ -89,7 +89,7 @@ export function KidsScreen({
         action={<AddKidButton onClick={() => setModalOpen(true)} />}
       />
 
-      {kidList.length === 0 ? <KidsEmptyState /> : <KidList kids={kidList} />}
+      {kidList.length === 0 ? <KidsEmptyState /> : <KidList kids={kidList} navigable={!connectionLost} />}
 
       {modalOpen && (
         <AddKidModal rooms={roomOptions} onClose={() => setModalOpen(false)} />

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { KidCard } from "@/components/kids/kid-card";
 import { SectionDivider } from "@/components/shared/section-divider";
-import { kids as mockKids, ROOMS, type Kid } from "@/lib/kids-data";
+import { ROOMS, type Kid } from "@/lib/kids-data";
 
 function SearchIcon() {
   return (
@@ -47,7 +47,7 @@ function groupByRoom(kids: Kid[]): Array<[string, Kid[]]> {
     });
 }
 
-export function KidList({ kids }: { kids: Kid[] }) {
+export function KidList({ kids, navigable = true }: { kids: Kid[]; navigable?: boolean }) {
   const [query, setQuery] = useState("");
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -79,13 +79,10 @@ export function KidList({ kids }: { kids: Kid[] }) {
           />
           <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
             {group.map((kid) => (
-              // Kids created client-side have no prerendered profile route, so
-              // their card renders without navigation
-              <KidCard
-                key={kid.id}
-                kid={kid}
-                interactive={mockKids.some((mock) => mock.id === kid.id)}
-              />
+              // In the real mode every card links to its own profile
+              // (/kids/{uuid}); in the mock fallback the cards are informative
+              // only — mock profiles live in the dev:mock environment (SPEC 14).
+              <KidCard key={kid.id} kid={kid} interactive={navigable} />
             ))}
           </div>
         </section>

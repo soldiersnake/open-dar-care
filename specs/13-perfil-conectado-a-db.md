@@ -1,6 +1,6 @@
 # SPEC 13 — Perfil real de niño `/kids/[uuid]` conectado a la DB
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 02 (pantalla de perfil mock con Hero/Banner/InfoList/Resumen/Padres), SPEC 06 (bloque "Padres vinculados" + modal VINCULAR client-mock), SPEC 11 (tablas `children`/`rooms` + admin client + `createChild`), SPEC 12 (patrón server-read de `/kids` con Suspense + `?fail=1` dev-only)
 > **Fecha:** 2026-11-09
 > **Objetivo:** Hacer navegable el perfil de los niños reales: la tarjeta de un niño de la DB abre `/kids/[uuid]` con sus datos reales (hero, banner de alergias + notas, fechas), los uuid inexistentes acaban en `notFound()`, y el fallo de conexión muestra un estado de error in-page; los mocks 1–8 dejan de ser navegables en modo real y esperan al entorno de mocks (SPEC 14).
@@ -71,18 +71,30 @@ Tras cada paso el proyecto queda compilable y funcional; el commit se hace despu
 
 ## Criterios de aceptación
 
-- [ ] `npm run build`, `npx tsc --noEmit` y `npm run lint` pasan sin errores.
-- [ ] Desde `/kids` (modo real), la tarjeta de un niño real (uuid) tiene `<Link>` y navega a `/kids/{uuid}`: cursor link + hover de la tarjeta como las mock.
-- [ ] `/kids/{uuid}` de un niño real muestra el perfil con datos reales: Hero (iniciales derivadas del nombre, edad desde `birth_date`, "Sala {nombre real de la sala}"), InfoList con Fecha de nacimiento / Sala / Ingreso en formato mock (`12 mar 2022` / `nov 2026`).
-- [ ] Banner "Alergias y notas" con niño con tags (`[peanut,lactose]`) → primera línea "Alergia a maní, lactosa."; con `medical_notes` además → segunda línea con el texto de notas; niño sin tags ni notas → no hay banner.
-- [ ] Bloque "PADRES VINCULADOS" en el perfil real: aparece vacío (sin filas) y el botón "Vincular otro padre" es clicable SIEMPRE (con y sin padres), abre el modal de SPEC 06 funcional client-side (agrega fila pending en memoria, sin persistir).
-- [ ] "Editar" y "Resumen del día" quedan sin acción (no navegan, ni rompen con click: cualquier interacción es no-op registrada como decisión de spec).
-- [ ] Un uuid que NO existe responde `notFound()` con la página default del app.
-- [ ] Un id numérico (1–8, los antiguos mock) en modo real responde también not-found (generateStaticParams de mocks eliminado; la ruta ya no depende de IDs estáticos).
-- [ ] Con `?fail=1` (dev) abriendo el perfil de un uuid: se ve (tras el spinner) la caja centrada "Perfil no disponible" con botón "Volver a Niños" que regresa a `/kids`; sin crash ni redirect automático.
-- [ ] En `/kids` con `?fail=1`, las tarjetas del mock quedan NO navegables (cursor default); las navegaciones de fallback a 404 desaparecen.
-- [ ] Ningún archivo de DB cambia (sin migraciones); `utils/supabase/admin.ts` y `actions/children.ts` quedan intactos.
-- [ ] Consola 0 errores / 0 warnings en las páginas verificadas (1280px y 375px) y build OK con `cacheComponents`.
+- [x] `npm run build`, `npx tsc --noEmit` y `npm run lint` pasan sin errores.
+      ✅ Verificado (9 nov 2026): lint exit 0, tsc exit 0, `next build` exit 0 (dos pasadas: antes y después del fix del `?fail=1`), `/kids/[id]` en ◐ Partial Prerender con `cacheComponents`.
+- [x] Desde `/kids` (modo real), la tarjeta de un niño real (uuid) tiene `<Link>` y navega a `/kids/{uuid}`: cursor link + hover de la tarjeta como las mock.
+      ✅ Verificado (9 nov 2026): snapshot muestra la tarjeta de Nina como `link` con `href=/kids/dbf3c931-…` y `cursor=pointer`; hover capturado (`.playwright-mcp/spec13-kids-hover-nina.png`); el click navegó a `/kids/{uuid}` (URL confirmada).
+- [x] `/kids/{uuid}` de un niño real muestra el perfil con datos reales: Hero (iniciales derivadas del nombre, edad desde `birth_date`, "Sala {nombre real de la sala}"), InfoList con Fecha de nacimiento / Sala / Ingreso en formato mock (`12 mar 2022` / `nov 2026`).
+      ✅ Verificado (9 nov 2026): perfil de Nina renderiza Hero "Nina Gómez / 4 años · Sala Soles" e InfoList "12 mar 2022 / Soles / nov 2026"; capturas `.playwright-mcp/spec13-perfil-nina-1280.png` y `spec13-perfil-nina-375.png`.
+- [x] Banner "Alergias y notas" con niño con tags (`[peanut,lactose]`) → primera línea "Alergia a maní, lactosa."; con `medical_notes` además → segunda línea con el texto de notas; niño sin tags ni notas → no hay banner.
+      ✅ Verificado (9 nov 2026): Nina (tags `[peanut,lactose]`) → "Alergia a maní, lactosa."; niño de prueba tags `[peanut]` + `medical_notes` → línea 1 "Alergia a maní." + línea 2 "Lleva inhalador en la mochila." sin desborde (`spec13-perfil-banner-tags-notas-1280.png`); niño solo `medical_notes` → "Intolerancia a la lactosa." (`spec13-perfil-banner-solo-notas-1280.png`); niño limpio → sin banner (`spec13-perfil-sin-banner-1280.png`). Filas de prueba eliminadas vía MCP (children quedó solo con Nina).
+- [x] Bloque "PADRES VINCULADOS" en el perfil real: aparece vacío (sin filas) y el botón "Vincular otro padre" es clicable SIEMPRE (con y sin padres), abre el modal de SPEC 06 funcional client-side (agrega fila pending en memoria, sin persistir).
+      ✅ Verificado (9 nov 2026): bloque vacío + botón visible en el perfil de Nina; modal SPEC 06 abre con código de invitación; guardar agrega fila "PENDIENTE" en memoria (`spec13-perfil-modal-pendiente-1280.png`); tras recargar el bloque vuelve vacío y `to_regclass('public.parent_children')` = null (sin persistencia).
+- [x] "Editar" y "Resumen del día" quedan sin acción (no navegan, ni rompen con click: cualquier interacción es no-op registrada como decisión de spec).
+      ✅ Verificado (9 nov 2026): clicks en ambos (`href="#"`) → URL permanece `/kids/dbf3c931-…` con solo el hash `#`, sin navegación ni errores de consola.
+- [x] Un uuid que NO existe responde `notFound()` con la página default del app.
+      ✅ Verificado (9 nov 2026): `/kids/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee` → "404 · This page could not be found." (default de Next bajo el layout `(app)`).
+- [x] Un id numérico (1–8, los antiguos mock) en modo real responde también not-found (generateStaticParams de mocks eliminado; la ruta ya no depende de IDs estáticos).
+      ✅ Verificado (9 nov 2026): `/kids/1` → 404 default; en el build no hay `generateStaticParams` para `/kids/[id]` (ruta ◐ por request).
+- [x] Con `?fail=1` (dev) abriendo el perfil de un uuid: se ve (tras el spinner) la caja centrada "Perfil no disponible" con botón "Volver a Niños" que regresa a `/kids`; sin crash ni redirect automático.
+      ✅ Verificado (9 nov 2026): spinner "Cargando niño…" → caja "Perfil no disponible" (`spec13-perfil-fail-error-1280.png`); el botón "Volver a Niños" regresa a `/kids`. Fix aplicado durante la verificación: `readFailed` inicializaba en `false` y con `?fail=1` terminaba en `notFound()` 404 en vez de la caja; ahora `readFailed = forcedFailure`.
+- [x] En `/kids` con `?fail=1`, las tarjetas del mock quedan NO navegables (cursor default); las navegaciones de fallback a 404 desaparecen.
+      ✅ Verificado (9 nov 2026): 8 mock informativos sin `<Link>`, cursor computed `default`, click en tarjeta → URL sigue `/kids?fail=1` (`spec13-kids-fail-1280.png`), toast "Fallo de conexión al cargar los niños.".
+- [x] Ningún archivo de DB cambia (sin migraciones); `utils/supabase/admin.ts` y `actions/children.ts` quedan intactos.
+      ✅ Verificado (9 nov 2026): `git status`/`git diff --stat` solo muestra los 4 archivos de la spec; sin archivos de migración; `admin.ts` y `children.ts` sin diff. DB verificada vía MCP antes/después: `children` quedó solo con Nina (`dbf3c931-…`, tags `[peanut,lactose]`, notes null) y `parent_children` no existe.
+- [x] Consola 0 errores / 0 warnings en las páginas verificadas (1280px y 375px) y build OK con `cacheComponents`.
+      ✅ Verificado (9 nov 2026): Playwright console messages = 0 errores / 0 warnings acumulados en `/kids`, `/kids/{uuid}`, `/kids/{uuid}?fail=1`, `/kids?fail=1`, 404s, modal, 1280px y 375px; build OK con `Cache Components enabled`.
 
 ## Decisiones
 
