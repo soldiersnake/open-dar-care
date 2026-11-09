@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createChild } from "@/actions/children";
 import { useToast } from "@/components/shared/toast-provider";
-import type { RoomOption } from "@/lib/kids-data";
+import type { KidDraft, RoomOption } from "@/lib/kids-data";
 
 const fieldClass =
   "w-full rounded-[14px] border-[1.5px] border-[#EADFD0] bg-white px-4 py-[13px] text-[15px] outline-none placeholder:text-[#B6A99B]";
@@ -80,9 +80,13 @@ function Chevron() {
 
 export function AddKidModal({
   rooms,
+  mockMode = false,
+  onSave,
   onClose,
 }: {
   rooms: RoomOption[];
+  mockMode?: boolean;
+  onSave?: (draft: KidDraft) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -134,6 +138,15 @@ export function AddKidModal({
     };
     if (validation.name ?? validation.birthDate ?? validation.room) {
       setErrors(validation);
+      return;
+    }
+
+    // Mock environment (SPEC 14): SPEC 05 save — client-side only, no DB.
+    // Same success toast as the real POST for consistent feedback.
+    if (mockMode) {
+      onSave?.(draft);
+      showToast(`El niño/a ${draft.name.trim()} agregado a la sala ${draft.room}`, "success");
+      onClose();
       return;
     }
 

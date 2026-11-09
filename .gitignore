@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# mock environment flag (SPEC 14): committed on purpose, never contains secrets
+!.env.mock
+
 # vercel
 .vercel
 
