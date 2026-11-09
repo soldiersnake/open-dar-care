@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ROOMS, type KidDraft } from "@/lib/kids-data";
+import { useRouter } from "next/navigation";
+import { createChild } from "@/actions/children";
+import { useToast } from "@/components/shared/toast-provider";
+import type { RoomOption } from "@/lib/kids-data";
 
 const fieldClass =
   "w-full rounded-[14px] border-[1.5px] border-[#EADFD0] bg-white px-4 py-[13px] text-[15px] outline-none placeholder:text-[#B6A99B]";
@@ -10,6 +13,33 @@ const REQUIRED_MESSAGE = "Este campo es obligatorio";
 
 type RequiredFieldName = "name" | "birthDate" | "room";
 type FieldErrors = Partial<Record<RequiredFieldName, string>>;
+
+// Allergy tags persist in English (SPEC 11 contract): the modal translates
+// known Spanish labels before calling the action; unknown tags pass through
+// as lowercase text (display layer translates them back for the badge).
+const SPANISH_TO_ENGLISH_TAGS: Record<string, string> = {
+  "maní": "peanut",
+  mani: "peanut",
+  lactosa: "lactose",
+  lacteos: "dairy",
+  "lácteos": "dairy",
+  gluten: "gluten",
+  huevo: "egg",
+  soja: "soy",
+  pescado: "fish",
+  "frutos secos": "nuts",
+  polen: "pollen",
+  penicilina: "penicillin",
+};
+
+function toEnglishTags(input: string): string {
+  const translations = input
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag) => tag.length > 0)
+    .map((tag) => SPANISH_TO_ENGLISH_TAGS[tag] ?? tag);
+  return [...new Set(translations)].join(", ");
+}
 
 function FieldLabel({ htmlFor, children }: { htmlFor: string; children: string }) {
   return (
@@ -49,13 +79,15 @@ function Chevron() {
 }
 
 export function AddKidModal({
+  rooms,
   onClose,
-  onSave,
 }: {
+  rooms: RoomOption[];
   onClose: () => void;
-  onSave: (draft: KidDraft) => void;
 }) {
-  const [draft, setDraft] = useState<KidDraft>({
+  const router = useRouter();
+  const { showToast } = useToast();
+  const [draft, setDraft] = useState({
     name: "",
     birthDate: "",
     room: "",
@@ -63,6 +95,7 @@ export function AddKidModal({
     notes: "",
   });
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -77,7 +110,7 @@ export function AddKidModal({
     };
   }, [onClose]);
 
-  const updateDraft = (field: keyof KidDraft) =>
+  const updateDraft = (field: keyof typeof draft) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
       setDraft((current) => ({ ...current, [field]: event.target.value }));
       // Inline errors clear as soon as their field gets a new value
@@ -90,8 +123,10 @@ export function AddKidModal({
       }
     };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    // Inline validation first: the action only runs once all required
+    // fields are present (SPEC 12).
     const validation: FieldErrors = {
       name: draft.name.trim() === "" ? REQUIRED_MESSAGE : undefined,
       birthDate: draft.birthDate === "" ? REQUIRED_MESSAGE : undefined,
@@ -101,15 +136,38 @@ export function AddKidModal({
       setErrors(validation);
       return;
     }
-    onSave(draft);
-    onClose();
+
+    const roomId = rooms.find((room) => room.name === draft.room)?.id ?? "";
+
+    const formData = new FormData();
+    formData.set("full_name", draft.name);
+    formData.set("birth_date", draft.birthDate);
+    formData.set("room_id", roomId);
+    formData.set("allergy_tags", toEnglishTags(draft.allergies));
+    formData.set("medical_notes", draft.notes);
+
+    setSaving(true);
+    try {
+      const result = await createChild(null, formData);
+
+      if (result.ok) {
+        showToast(`El niño/a ${draft.name.trim()} agregado a la sala ${draft.room}`, "success");
+        onClose();
+        // The server page re-reads the DB and the list shows the new kid.
+        router.refresh();
+      } else {
+        showToast(result.error, "error");
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[rgba(63,54,46,0.45)] p-4 md:p-10"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget && !saving) onClose();
       }}
     >
       <div
@@ -135,7 +193,8 @@ export function AddKidModal({
             </span>
             <button
               type="submit"
-              className="cursor-pointer text-[15px] font-extrabold text-accent"
+              disabled={saving}
+              className="cursor-pointer text-[15px] font-extrabold text-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               Guardar
             </button>
@@ -191,9 +250,11 @@ export function AddKidModal({
                   <option value="" disabled hidden>
                     Seleccionar sala
                   </option>
-                  {ROOMS.map((room) => (
-                    <option key={room} value={room}>
-                      {room}
+                  {rooms.map((room) => (
+                    // Mock fallback rooms (connection lost) share no uuid, so the
+                    // key combines id and name to stay unique (SPEC 12)
+                    <option key={`${room.id}:${room.name}`} value={room.name}>
+                      {room.name}
                     </option>
                   ))}
                 </select>

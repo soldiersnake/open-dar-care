@@ -10,7 +10,7 @@ export type LinkedParent = {
 };
 
 export type Kid = {
-  id: number;
+  id: number | string; // number for mock rows; uuid string for real children (SPEC 12)
   name: string;
   age: number;
   initials: string;
@@ -310,3 +310,83 @@ export const kids: Kid[] = [
 export function getKidById(id: number): Kid | undefined {
   return kids.find((kid) => kid.id === id);
 }
+
+// ---------- SPEC 12: /kids reads real children (server-side derivation) ----------
+
+// Options of the add-kid modal room select as they arrive from the server.
+export type RoomOption = {
+  id: string; // rooms.id uuid (SPEC 11)
+  name: string;
+};
+
+// English allergy tags (DB) translated to the Spanish labels the mock uses.
+const ALLERGY_TAG_UI: Record<string, string> = {
+  peanut: "maní",
+  lactose: "lactosa",
+  gluten: "gluten",
+  egg: "huevo",
+  dairy: "lacteos",
+  soy: "soja",
+  fish: "pescado",
+  nuts: "frutos secos",
+  pollen: "polen",
+  penicillin: "penicilina",
+};
+
+const translateAllergyTag = (tag: string): string =>
+  ALLERGY_TAG_UI[tag.trim().toLowerCase()] ?? tag.trim().toLowerCase();
+
+// Row shape the server page selects from public.children (SPEC 11 schema).
+export type DbChildRow = {
+  id: string;
+  full_name: string;
+  birth_date: string; // ISO date
+  enrolled_at: string; // ISO date
+  allergy_tags: string[] | null;
+  medical_notes: string | null;
+  rooms: { name: string } | { name: string }[] | null;
+};
+
+// Derives a display Kid from a real children row. Server-side only: it uses
+// `new Date()` for the age paper-trail, which keeps the client render
+// deterministic (SPEC 05: no non-deterministic values in the render tree).
+export function kidFromDbRow(row: DbChildRow, rowAt: number = 0, now = new Date()): Kid {
+  const name = row.full_name.trim();
+  const birth = new Date(`${row.birth_date}T00:00:00`);
+  const enrolled = new Date(`${row.enrolled_at}T00:00:00`);
+  const birthdayNotReachedYet =
+    now.getMonth() < birth.getMonth() ||
+    (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
+
+  const kid: Kid = {
+    id: row.id,
+    name,
+    age: now.getFullYear() - birth.getFullYear() - (birthdayNotReachedYet ? 1 : 0),
+    initials: name.charAt(0).toUpperCase(),
+    avatarColor: AVATAR_COLOR_PALETTE[rowAt % AVATAR_COLOR_PALETTE.length],
+    birthDate: `${birth.getDate()} ${MONTH_ABBREVIATIONS[birth.getMonth()]} ${birth.getFullYear()}`,
+    room: roomName(row),
+    entryDate: `${MONTH_ABBREVIATIONS[enrolled.getMonth()]} ${enrolled.getFullYear()}`,
+    parents: [],
+  };
+
+  const tags = (row.allergy_tags ?? []).filter((tag) => tag.trim().length > 0);
+  if (tags.length > 0) {
+    const labels = tags.map(translateAllergyTag);
+    kid.allergyTag = labels[0].toUpperCase();
+    kid.allergiesNote = `Alergia a ${labels.join(", ")}.`;
+  }
+
+  if (row.medical_notes && row.medical_notes.trim().length > 0) {
+    kid.medicalNotes = row.medical_notes;
+  }
+
+  return kid;
+}
+
+function roomName(row: DbChildRow): string {
+  const relation = row.rooms;
+  if (Array.isArray(relation)) return relation[0]?.name ?? "";
+  return relation?.name ?? "";
+}
+

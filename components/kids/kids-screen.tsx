@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddKidModal } from "@/components/kids/add-kid-modal";
 import { KidList } from "@/components/kids/kid-list";
 import { PageHeader } from "@/components/shared/page-header";
-import { createKidFromForm, kids as mockKids, type Kid, type KidDraft } from "@/lib/kids-data";
+import { useToast } from "@/components/shared/toast-provider";
+import { kids as mockKids, ROOMS, type Kid, type RoomOption } from "@/lib/kids-data";
 
 function AddKidIcon() {
   return (
@@ -37,16 +38,48 @@ function AddKidButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function KidsScreen() {
-  const [kidList, setKidList] = useState<Kid[]>(mockKids);
+// Zero real children with a healthy DB: centered box pointing to the CTA.
+function KidsEmptyState() {
+  return (
+    <div className="rounded-[18px] border border-line bg-panel py-16 text-center">
+      <p className="font-display text-[18px] font-semibold text-ink">
+        No hay niños agregados
+      </p>
+      <p className="mt-2 text-[14px] text-muted">
+        Usa el botón “+ Agregar niño” para crear el primero
+      </p>
+    </div>
+  );
+}
+
+// Data mode comes from the server page (app/(app)/kids):
+//  - kids + rooms: healthy DB read, list is the single source of truth.
+//  - connectionLost: server read failed (or dev `?fail=1`); the mock shows
+//    as fallback and the client raises the failure toast on mount (SPEC 12).
+export function KidsScreen({
+  kids = [],
+  rooms = [],
+  connectionLost = false,
+}: {
+  kids?: Kid[];
+  rooms?: RoomOption[];
+  connectionLost?: boolean;
+}) {
+  const { showToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleSaveKid = (draft: KidDraft) => {
-    setKidList((current) => {
-      const nextId = current.reduce((max, kid) => Math.max(max, kid.id), 0) + 1;
-      return [createKidFromForm(draft, nextId), ...current];
-    });
-  };
+  useEffect(() => {
+    if (connectionLost) {
+      showToast("Fallo de conexión al cargar los niños.", "error");
+    }
+  }, [connectionLost, showToast]);
+
+  const kidList = connectionLost ? mockKids : kids;
+  // Without a healthy DB read the modal degrades to the mock room names
+  // (no uuid): an attempt to save fails with an honest error toast.
+  const roomOptions: RoomOption[] = connectionLost
+    ? ROOMS.map((name) => ({ id: "", name }))
+    : rooms;
 
   return (
     <div className="mx-auto w-full max-w-220 px-5 pb-20 pt-24.5 md:px-10 md:pt-8.5">
@@ -56,10 +89,10 @@ export function KidsScreen() {
         action={<AddKidButton onClick={() => setModalOpen(true)} />}
       />
 
-      <KidList kids={kidList} />
+      {kidList.length === 0 ? <KidsEmptyState /> : <KidList kids={kidList} />}
 
       {modalOpen && (
-        <AddKidModal onClose={() => setModalOpen(false)} onSave={handleSaveKid} />
+        <AddKidModal rooms={roomOptions} onClose={() => setModalOpen(false)} />
       )}
     </div>
   );

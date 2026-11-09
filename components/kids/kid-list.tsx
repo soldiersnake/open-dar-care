@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { KidCard } from "@/components/kids/kid-card";
 import { SectionDivider } from "@/components/shared/section-divider";
-import { kids as mockKids, type Kid } from "@/lib/kids-data";
+import { kids as mockKids, ROOMS, type Kid } from "@/lib/kids-data";
 
 function SearchIcon() {
   return (
@@ -28,6 +28,25 @@ function countLabel(count: number): string {
   return `${count} ${count === 1 ? "niño" : "niños"}`;
 }
 
+// Groups rendering their own divider per room (SPEC 02 separators, now over
+// real DB rows): rooms follow the seed order and unlisted rooms append at the
+// end sorted alphabetically.
+function groupByRoom(kids: Kid[]): Array<[string, Kid[]]> {
+  const groups = new Map<string, Kid[]>();
+  for (const kid of kids) {
+    const room = kid.room || "Sin sala";
+    groups.set(room, [...(groups.get(room) ?? []), kid]);
+  }
+  const orderedRooms = [...ROOMS, ...[...groups.keys()]
+    .filter((room) => !(ROOMS as readonly string[]).includes(room))
+    .sort((a, b) => a.localeCompare(b))];
+  return orderedRooms
+    .flatMap((room): Array<[string, Kid[]]> => {
+      const group = groups.get(room);
+      return group ? [[room, group]] : [];
+    });
+}
+
 export function KidList({ kids }: { kids: Kid[] }) {
   const [query, setQuery] = useState("");
 
@@ -37,6 +56,7 @@ export function KidList({ kids }: { kids: Kid[] }) {
       kids.filter((kid) => kid.name.toLowerCase().includes(normalizedQuery)),
     [kids, normalizedQuery],
   );
+  const roomGroups = useMemo(() => groupByRoom(filteredKids), [filteredKids]);
 
   return (
     <>
@@ -51,26 +71,29 @@ export function KidList({ kids }: { kids: Kid[] }) {
         />
       </div>
 
-      <SectionDivider
-        label="SALA SOLES"
-        count={countLabel(filteredKids.length)}
-      />
+      {roomGroups.map(([room, group]) => (
+        <section key={room}>
+          <SectionDivider
+            label={`SALA ${room.toUpperCase()}`}
+            count={countLabel(group.length)}
+          />
+          <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+            {group.map((kid) => (
+              // Kids created client-side have no prerendered profile route, so
+              // their card renders without navigation
+              <KidCard
+                key={kid.id}
+                kid={kid}
+                interactive={mockKids.some((mock) => mock.id === kid.id)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
 
-      {filteredKids.length === 0 ? (
+      {filteredKids.length === 0 && (
         <div className="rounded-[18px] border border-line bg-panel py-10 text-center text-[15px] text-muted">
           {`Sin resultados para “${query.trim()}”`}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
-          {filteredKids.map((kid) => (
-            // Kids created client-side have no prerendered profile route, so their
-            // card renders without navigation
-            <KidCard
-              key={kid.id}
-              kid={kid}
-              interactive={mockKids.some((mock) => mock.id === kid.id)}
-            />
-          ))}
         </div>
       )}
     </>
