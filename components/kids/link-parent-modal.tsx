@@ -109,11 +109,21 @@ export function LinkParentModal({
   invitationCode,
   onClose,
   onSave,
+  submitting = false,
+  serverError,
+  closeOnSave = true,
 }: {
   kidName: string;
   invitationCode: string;
   onClose: () => void;
   onSave: (draft: LinkedParentDraft) => void;
+  // Real mode (SPEC 15): the card drives the Server Action; while it runs the
+  // button is disabled and a server error shows inline (the modal stays open).
+  submitting?: boolean;
+  serverError?: string;
+  // Mock mode keeps the SPEC 06 behavior: onSave succeeds synchronously and
+  // the modal closes itself. Real mode closes from the card on success only.
+  closeOnSave?: boolean;
 }) {
   const [draft, setDraft] = useState<{ name: string; email: string; relation: Relation }>({
     name: "",
@@ -163,7 +173,7 @@ export function LinkParentModal({
       return;
     }
     onSave(draft);
-    onClose();
+    if (closeOnSave) onClose();
   };
 
   return (
@@ -267,9 +277,16 @@ export function LinkParentModal({
               <div className="mt-1.5 text-[13px] text-[#A88526]">Vence en 7 días</div>
             </div>
 
+            {serverError !== undefined && (
+              <p className="m-0 mb-4 text-[12px] font-bold text-accent-edit" role="alert">
+                {serverError}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="flex w-full cursor-pointer items-center justify-center gap-[9px] rounded-[14px] bg-[linear-gradient(180deg,#F4977E,#EE8164)] p-3.5 text-[15.5px] font-extrabold text-white shadow-[0_10px_22px_-8px_rgba(238,129,100,0.7)]"
+              disabled={submitting}
+              className="flex w-full cursor-pointer items-center justify-center gap-[9px] rounded-[14px] bg-[linear-gradient(180deg,#F4977E,#EE8164)] p-3.5 text-[15.5px] font-extrabold text-white shadow-[0_10px_22px_-8px_rgba(238,129,100,0.7)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <SendIcon />
               Enviar invitación

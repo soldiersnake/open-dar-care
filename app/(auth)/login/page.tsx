@@ -1,6 +1,18 @@
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 
-export default function Login() {
+// SPEC 15: after activating an account (new signup or a 2nd-child link), the
+// parent lands here with ?activada=1 and sees an inline success banner above
+// the form. Without the param, /login renders exactly as SPEC 10.
+const SUCCESS_MESSAGE = "Tu cuenta quedó lista. Iniciá sesión con tu email y contraseña.";
+const EXISTING_ACCOUNT_MESSAGE =
+  "Ya tenías cuenta: iniciá sesión para ver a tu familia.";
+
+export default function Login({
+  searchParams,
+}: {
+  searchParams: Promise<{ activada?: string; existente?: string }>;
+}) {
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-[1.05fr_1fr]">
       {/* Brand panel */}
@@ -21,7 +33,7 @@ export default function Login() {
               strokeLinejoin="round"
             >
               <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4 1.4" />
             </svg>
           </div>
           <span className="font-display text-[21px] font-semibold tracking-[0.5px]">
@@ -47,14 +59,64 @@ export default function Login() {
       </div>
 
       {/* Form panel */}
-      <div className="flex items-center justify-center p-10">
-        {/* Real login is wired to Supabase Auth; dev ships the seed email pre-filled. */}
-        <LoginForm
-          prefillEmail={
-            process.env.NODE_ENV === "development" ? "staff@opendaycare.test" : ""
-          }
-        />
+      <div className="flex flex-col items-center justify-center gap-5 p-10">
+        {/* Request-time section (cacheComponents): searchParams + the form
+            stream inside the Suspense boundary. */}
+        <Suspense fallback={<div className="w-full max-w-98 animate-pulse" />}>
+          <LoginSuccessSection searchParams={searchParams} />
+        </Suspense>
       </div>
     </div>
+  );
+}
+
+// Reads ?activada=1&existente=1 at request time and renders the success
+// banner (when present) above the form.
+async function LoginSuccessSection({
+  searchParams,
+}: {
+  searchParams: Promise<{ activada?: string; existente?: string }>;
+}) {
+  const { activada, existente } = await searchParams;
+  const successMessage =
+    activada === "1"
+      ? existente === "1"
+        ? EXISTING_ACCOUNT_MESSAGE
+        : SUCCESS_MESSAGE
+      : null;
+
+  return (
+    <>
+      {successMessage ? (
+        <div
+          role="status"
+          className="flex w-full max-w-98 items-center gap-3 rounded-[14px] bg-[#FBF1D6] px-4 py-3.5"
+        >
+          <span className="flex h-6 w-6 flex-none items-center justify-center rounded-lg bg-[#5FB97E]">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#fff"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <span className="text-[13.5px] leading-[1.45] font-bold text-[#8A7234]">
+            {successMessage}
+          </span>
+        </div>
+      ) : null}
+      {/* Real login is wired to Supabase Auth; dev ships the seed email pre-filled. */}
+      <LoginForm
+        prefillEmail={
+          process.env.NODE_ENV === "development" ? "staff@opendaycare.test" : ""
+        }
+      />
+    </>
   );
 }

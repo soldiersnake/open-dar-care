@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/shared/avatar";
 import { Badge } from "@/components/shared/badge";
 import { LinkParentModal } from "@/components/kids/link-parent-modal";
+import { useToast } from "@/components/shared/toast-provider";
+import { createInvitation } from "@/actions/invitations";
 import {
   createPendingParentFromForm,
   generateInvitationCode,
@@ -32,33 +35,76 @@ function LinkedParentRow({ parent }: { parent: LinkedParent }) {
   );
 }
 
-// Client owner of the linked-parents list: mock rows plus those added by the
-// link-parent modal (client-side only, no persistence).
+// Client owner of the linked-parents list, dual-mode (SPEC 14 pattern):
+// - mockMode (dev:mock): SPEC 06 behavior — mock rows plus client-side
+//   prepends, no POST, no email.
+// - Real mode: rows arrive as a server prop (ACTIVA from parent_children,
+//   PENDIENTE from live invitations, SPEC 15); "Enviar invitación" calls the
+//   createInvitation Server Action, and a success closes the modal, shows the
+//   toast and refreshes the server list (router.refresh). A server error
+//   (email already linked, email failure) shows inline and keeps the modal
+//   open.
 export function LinkParentCard({
   parents,
   kidName,
+  kidId,
+  mockMode = false,
 }: {
   parents: LinkedParent[];
   kidName: string;
+  kidId: string;
+  mockMode?: boolean;
 }) {
-  const [rows, setRows] = useState<LinkedParent[]>(parents);
+  const router = useRouter();
+  const { showToast } = useToast();
+  // Mock-only state: real mode renders the prop directly (the server is the
+  // source of truth, SPEC 14).
+  const [mockRows, setMockRows] = useState<LinkedParent[]>(parents);
   const [modalOpen, setModalOpen] = useState(false);
   const [invitationCode, setInvitationCode] = useState("");
+  const [serverError, setServerError] = useState<string | undefined>(undefined);
+  const [isPending, startTransition] = useTransition();
+
+  const rows = mockMode ? mockRows : parents;
 
   const openModal = () => {
     // The code is generated in the open handler, never during the initial
     // render: random values must not reach the SSR tree (cacheComponents).
     setInvitationCode(generateInvitationCode());
+    setServerError(undefined);
     setModalOpen(true);
   };
 
   const handleSaveParent = (draft: LinkedParentDraft) => {
-    // Next id over the current rows (mock first, then added ones): the first
-    // invited parent matches the spec's "mock max + 1" and ids stay unique.
-    setRows((current) => {
-      const nextId =
-        current.reduce((max, parent) => Math.max(max, parent.id), 0) + 1;
-      return [createPendingParentFromForm(draft, nextId), ...current];
+    if (mockMode) {
+      // Next id over the current rows (mock first, then added ones): the first
+      // invited parent matches the spec's "mock max + 1" and ids stay unique.
+      setMockRows((current) => {
+        const nextId =
+          current.reduce((max, parent) => Math.max(max, parent.id), 0) + 1;
+        return [createPendingParentFromForm(draft, nextId), ...current];
+      });
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await createInvitation({
+        childId: kidId,
+        fullName: draft.name,
+        email: draft.email,
+        relation: draft.relation,
+        code: invitationCode,
+      });
+
+      if (result.ok) {
+        setModalOpen(false);
+        showToast(`Invitación enviada a ${draft.email.trim()}`);
+        // The new PENDIENTE row lives in the DB: the server list re-renders
+        // with the refreshed prop (no manual reload).
+        router.refresh();
+      } else {
+        setServerError(result.error);
+      }
     });
   };
 
@@ -103,6 +149,9 @@ export function LinkParentCard({
           invitationCode={invitationCode}
           onClose={() => setModalOpen(false)}
           onSave={handleSaveParent}
+          submitting={isPending}
+          serverError={serverError}
+          closeOnSave={mockMode}
         />
       ) : null}
     </div>

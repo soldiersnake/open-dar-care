@@ -390,3 +390,58 @@ function roomName(row: DbChildRow): string {
   return relation?.name ?? "";
 }
 
+// ---------- SPEC 15: invitation relationship chips ↔ DB enum ----------
+
+// Values of the public.relationship_type enum (migration 0010).
+export type RelationshipValue = "father" | "mother" | "guardian";
+
+// Modal chip label → enum value stored in invitations/parent_children.
+export const RELATIONSHIP_BY_CHIP: Record<
+  (typeof INVITATION_RELATIONS)[number],
+  RelationshipValue
+> = {
+  "Mamá": "mother",
+  "Papá": "father",
+  "Tutor/a": "guardian",
+};
+
+// Enum value → chip label shown in the linked-parents rows.
+export const CHIP_BY_RELATIONSHIP: Record<RelationshipValue, string> = {
+  father: "Papá",
+  mother: "Mamá",
+  guardian: "Tutor/a",
+};
+
+// One row source for the linked-parents block in real mode: either an ACTIVA
+// link (parent_children + the parent's user/auth data) or a PENDIENTE live
+// invitation (pending, not expired). The server page assembles the sources;
+// the derivation stays pure and client-safe.
+export type LinkedParentSource = {
+  kind: "active" | "pending";
+  fullName: string;
+  email: string;
+  relationship: RelationshipValue;
+  createdAt: string; // ISO timestamp from the DB row
+};
+
+// Builds the display rows for "PADRES VINCULADOS" in real mode: both kinds
+// merged in created_at descending order, ids re-assigned 1..n (unique React
+// keys) and the mock's odd/even purple/blue alternation.
+export function linkedParentsFromSources(
+  sources: LinkedParentSource[],
+): LinkedParent[] {
+  const sorted = [...sources].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  return sorted.map((source, index) => {
+    const id = index + 1;
+    return {
+      id,
+      name: source.fullName,
+      relation: CHIP_BY_RELATIONSHIP[source.relationship],
+      status: source.kind,
+      avatarColor: id % 2 === 1 ? "purple" : "blue",
+      note: source.email,
+    } satisfies LinkedParent;
+  });
+}
+
