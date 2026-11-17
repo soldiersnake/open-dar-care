@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Avatar } from "@/components/shared/avatar";
 import { InfoList } from "@/components/shared/info-list";
 import { LinkParentCard } from "@/components/kids/link-parent-card";
@@ -8,14 +9,85 @@ import { KidsLoading } from "@/components/kids/kids-loading";
 import {
   getKidById,
   kidFromDbRow,
+  linkedParentsFromSources,
   type DbChildRow,
   type Kid,
+  type LinkedParent,
+  type LinkedParentSource,
+  type RelationshipValue,
 } from "@/lib/kids-data";
 import { isMockEnv } from "@/lib/dev-environment";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// SPEC 15: builds the linked-parents rows for a real child — ACTIVA links
+// from parent_children (name from public.users, email from the Auth admin
+// API: public.users has no email) plus PENDIENTE live invitations. The row
+// derivation is pure and lives in lib/kids-data.
+async function loadLinkedParents(
+  admin: SupabaseClient,
+  childId: string,
+): Promise<LinkedParent[]> {
+  const [links, invites] = await Promise.all([
+    admin
+      .from("parent_children")
+      .select("id, parent_id, relationship, created_at, users ( full_name )")
+      .eq("child_id", childId)
+      .returns<
+        {
+          id: string;
+          parent_id: string;
+          relationship: RelationshipValue;
+          created_at: string;
+          users: { full_name: string } | { full_name: string }[] | null;
+        }[]
+      >(),
+    admin
+      .from("invitations")
+      .select("full_name, email, relationship, created_at")
+      .eq("child_id", childId)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .returns<
+        {
+          full_name: string;
+          email: string;
+          relationship: RelationshipValue;
+          created_at: string;
+        }[]
+      >(),
+  ]);
+
+  const sources: LinkedParentSource[] = [];
+
+  for (const link of links.data ?? []) {
+    const userRelation = Array.isArray(link.users) ? link.users[0] : link.users;
+    if (!userRelation?.full_name) continue;
+    // One admin lookup per linked parent (N is small — spec risk note).
+    const { data: userData } = await admin.auth.admin.getUserById(link.parent_id);
+    sources.push({
+      kind: "active",
+      fullName: userRelation.full_name,
+      email: userData?.user?.email ?? "",
+      relationship: link.relationship,
+      createdAt: link.created_at,
+    });
+  }
+
+  for (const invite of invites.data ?? []) {
+    sources.push({
+      kind: "pending",
+      fullName: invite.full_name,
+      email: invite.email,
+      relationship: invite.relationship,
+      createdAt: invite.created_at,
+    });
+  }
+
+  return linkedParentsFromSources(sources);
+}
 
 function BackLink() {
   return (
@@ -165,6 +237,8 @@ async function KidProfile({
 
   let kid: Kid | null = null;
   let medicalNotes: string | null = null;
+  // Real linked-parents rows (ACTIVA links + live PENDIENTE invitations).
+  let parents: LinkedParent[] = [];
   // A dev-forced failure (`?fail=1`) takes the same in-page error path as a
   // real read failure: no DB hit, "Perfil no disponible" box (SPEC 13).
   let readFailed = forcedFailure;
@@ -187,6 +261,7 @@ async function KidProfile({
       if (data) {
         kid = kidFromDbRow(data);
         medicalNotes = kid.medicalNotes ?? null;
+        parents = await loadLinkedParents(admin, id);
       }
     } catch (error) {
       console.error("kid profile: remote read failed", error);
@@ -223,9 +298,9 @@ async function KidProfile({
 
       <div className="flex w-75 flex-none flex-col gap-3.5">
         <DaySummaryButton />
-        {/* SPEC 06 block stays client-mock: parents arrive later via
-            parent_children/invitations; the button is always available. */}
-        <LinkParentCard parents={[]} kidName={kid.name} />
+        {/* Real rows (ACTIVA + PENDIENTE from the DB) + the always-available
+            button; the modal posts through the createInvitation action. */}
+        <LinkParentCard parents={parents} kidName={kid.name} kidId={kid.id as string} />
       </div>
     </div>
   );
@@ -267,8 +342,14 @@ async function MockKidProfile({ params }: { params: Promise<{ id: string }> }) {
 
       <div className="flex w-75 flex-none flex-col gap-3.5">
         <DaySummaryButton />
-        {/* Mock parents (SPEC 06 example rows) + the always-available button. */}
-        <LinkParentCard parents={kid.parents} kidName={kid.name} />
+        {/* Mock parents (SPEC 06 example rows) + the always-available button;
+            the modal keeps the client-side-only flow (SPEC 14). */}
+        <LinkParentCard
+          parents={kid.parents}
+          kidName={kid.name}
+          kidId={String(kid.id)}
+          mockMode
+        />
       </div>
     </div>
   );
